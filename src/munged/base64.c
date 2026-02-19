@@ -111,7 +111,7 @@ base64_init (base64_ctx *x)
 
     x->num = 0;
     x->pad = 0;
-    assert (x->magic = BASE64_MAGIC);
+    assert ((x->magic = BASE64_MAGIC));
     assert (!(x->finalized = 0));
     return (0);
 }
@@ -200,7 +200,7 @@ base64_encode_final (base64_ctx *x, void *dst, int *dstlen)
     else {
         *dstlen = 0;
     }
-    assert (x->finalized = 1);
+    assert ((x->finalized = 1));
     return (0);
 }
 
@@ -310,7 +310,7 @@ base64_decode_final (base64_ctx *x, void *dst, int *dstlen)
         rc = -1;
     }
     *dstlen = 0;
-    assert (x->finalized = 1);
+    assert ((x->finalized = 1));
     return (rc);
 }
 
@@ -325,7 +325,7 @@ base64_cleanup (base64_ctx *x)
     assert (x->magic == BASE64_MAGIC);
 
     memset (x, 0, sizeof (*x));
-    assert (x->magic = ~BASE64_MAGIC);
+    assert ((x->magic = ~BASE64_MAGIC));
     return (0);
 }
 
