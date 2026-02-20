@@ -57,16 +57,9 @@ main (int argc, char *argv[])
     const char dst3[] = "FPucAw==";
 
     plan (3);
-
-    ok (validate (dst1, src1, sizeof (src1)) == 0,
-            "Input data 0x14fb9c03d97e");
-
-    ok (validate (dst2, src2, sizeof (src2)) == 0,
-            "Input data 0x14fb9c03d9");
-
-    ok (validate (dst3, src3, sizeof (src3)) == 0,
-            "Input data 0x14fb9c03");
-
+    ok (validate (dst1, src1, sizeof src1) == 0, "Input data 0x14fb9c03d97e");
+    ok (validate (dst2, src2, sizeof src2) == 0, "Input data 0x14fb9c03d9");
+    ok (validate (dst3, src3, sizeof src3) == 0, "Input data 0x14fb9c03");
     done_testing ();
 
     exit (EXIT_SUCCESS);

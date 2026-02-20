@@ -324,7 +324,7 @@ base64_cleanup (base64_ctx *x)
     assert (x != NULL);
     assert (x->magic == BASE64_MAGIC);
 
-    memset (x, 0, sizeof (*x));
+    memset (x, 0, sizeof *x);
     assert ((x->magic = ~BASE64_MAGIC));
     return (0);
 }
@@ -439,8 +439,8 @@ main (int argc, char *argv[])
 
     col = (argc > 1) ? atoi (argv[1]) : BASE64_DEF_COLS;
 
-    base64_build_table (a2b, sizeof (a2b));
-    base64_print_table (a2b, sizeof (a2b), "asc2bin", col);
+    base64_build_table (a2b, sizeof a2b);
+    base64_print_table (a2b, sizeof a2b, "asc2bin", col);
     exit (EXIT_SUCCESS);
 }
 
