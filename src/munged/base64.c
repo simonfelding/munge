@@ -113,7 +113,7 @@ base64_init (base64_ctx *x)
     x->pad = 0;
     assert ((x->magic = BASE64_MAGIC));
     assert (!(x->finalized = 0));
-    return (0);
+    return 0;
 }
 
 
@@ -142,7 +142,7 @@ base64_encode_update (base64_ctx *x, void *vdst, int *dstlen,
     num_write = 0;
 
     if (srclen <= 0) {
-        return (0);
+        return 0;
     }
     /*  Encode leftover data if context buffer can be filled.
      */
@@ -171,7 +171,7 @@ base64_encode_update (base64_ctx *x, void *vdst, int *dstlen,
         x->num += srclen;
     }
     *dstlen = num_write;
-    return (0);
+    return 0;
 }
 
 
@@ -201,7 +201,7 @@ base64_encode_final (base64_ctx *x, void *dst, int *dstlen)
         *dstlen = 0;
     }
     assert ((x->finalized = 1));
-    return (0);
+    return 0;
 }
 
 
@@ -311,7 +311,7 @@ base64_decode_final (base64_ctx *x, void *dst, int *dstlen)
     }
     *dstlen = 0;
     assert ((x->finalized = 1));
-    return (rc);
+    return rc;
 }
 
 
@@ -326,7 +326,7 @@ base64_cleanup (base64_ctx *x)
 
     memset (x, 0, sizeof *x);
     assert ((x->magic = ~BASE64_MAGIC));
-    return (0);
+    return 0;
 }
 
 
@@ -369,7 +369,7 @@ base64_encode_block (void *dst, int *dstlen, const void *src, int srclen)
     }
     *pdst = '\0';
     *dstlen = n;
-    return (0);
+    return 0;
 }
 
 
@@ -380,7 +380,7 @@ base64_encode_block (void *dst, int *dstlen, const void *src, int srclen)
 int
 base64_decode_block (void *dst, int *dstlen, const void *src, int srclen)
 {
-    return (base64_decode_update (NULL, dst, dstlen, src, srclen));
+    return base64_decode_update (NULL, dst, dstlen, src, srclen);
 }
 
 
@@ -455,7 +455,6 @@ base64_build_table (unsigned char *data, int len)
     for (i = strlen (bin2asc) - 1; i >= 0; i--)
         data[bin2asc[i]] = i;
     data[BASE64_PAD_CHAR] = BASE64_PAD;
-    return;
 }
 
 
@@ -479,7 +478,6 @@ base64_print_table (unsigned char *data, int len, char *name, int col)
         printf (", ");
     }
     printf ("\n};\n");
-    return;
 }
 
 
