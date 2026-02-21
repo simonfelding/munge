@@ -256,6 +256,7 @@ base64_decode_update (base64_ctx *x, void *dst, int *dstlen,
             continue;
         }
         if ((c == BASE64_ERR) || (pad > 0)) {
+            errno = EBADMSG;
             err++;
             break;
         }
@@ -288,6 +289,9 @@ base64_decode_update (base64_ctx *x, void *dst, int *dstlen,
      */
     else if (!err) {
         err = (((i + pad) % 4) != 0);
+        if (err) {
+            errno = EBADMSG;
+        }
     }
     *pdst = '\0';
     *dstlen = pdst - (unsigned char *) dst;
@@ -315,6 +319,7 @@ base64_decode_final (base64_ctx *x, void *dst, int *dstlen)
     assert (x->finalized != 1);
 
     if (((x->num + x->pad) % 4) != 0) {
+        errno = EBADMSG;
         rc = -1;
     }
     *dstlen = 0;
