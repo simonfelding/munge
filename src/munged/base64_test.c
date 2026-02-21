@@ -1,4 +1,4 @@
-/*****************************************************************************
+/******************************************************************************
  *  Copyright (C) 2007-2026 Lawrence Livermore National Security, LLC.
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  UCRL-CODE-155910.
@@ -24,26 +24,22 @@
  *  <https://www.gnu.org/licenses/>.
  *****************************************************************************/
 
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "base64.h"
 #include "tap.h"
 
-
-/*****************************************************************************
+/**
  *  Test cases from RFC 2440 (OpenPGP Message Format)
- *    Section 6.5 (Examples of Radix-64).
- *****************************************************************************/
-
+ *  Section 6.5 (Examples of Radix-64)
+ */
 
 int validate (const char *dst, const void *src, int srclen);
 int encode_block (char *dst, int *dstlen, const void *src, int srclen);
 int encode_context (char *dst, int *dstlen, const void *src, int srclen);
 int decode_block (char *dst, int *dstlen, const void *src, int srclen);
 int decode_context (char *dst, int *dstlen, const void *src, int srclen);
-
 
 int
 main (int argc, char *argv[])
@@ -64,7 +60,6 @@ main (int argc, char *argv[])
 
     exit (EXIT_SUCCESS);
 }
-
 
 int
 validate (const char *dst, const void *src, int srclen)
@@ -103,13 +98,11 @@ validate (const char *dst, const void *src, int srclen)
     return 0;
 }
 
-
 int
 encode_block (char *dst, int *dstlen, const void *src, int srclen)
 {
     return base64_encode_block (dst, dstlen, src, srclen);
 }
-
 
 int
 encode_context (char *dst, int *dstlen, const void *src, int srclen)
@@ -137,13 +130,11 @@ encode_context (char *dst, int *dstlen, const void *src, int srclen)
     return 0;
 }
 
-
 int
 decode_block (char *dst, int *dstlen, const void *src, int srclen)
 {
     return base64_decode_block (dst, dstlen, src, srclen);
 }
-
 
 int
 decode_context (char *dst, int *dstlen, const void *src, int srclen)

@@ -1,4 +1,4 @@
-/*****************************************************************************
+/******************************************************************************
  *  Copyright (C) 2007-2026 Lawrence Livermore National Security, LLC.
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  UCRL-CODE-155910.
@@ -34,10 +34,9 @@
 #include <string.h>
 #include "base64.h"
 
-/*****************************************************************************
+/**
  *  Notes
- *****************************************************************************/
-/*
+ *
  *  For details on base64 encoding/decoding, refer to
  *  rfc2440 (OpenPGP Message Format) sections 6.3-6.5.
  *
@@ -52,19 +51,11 @@
  *  This custom implementation provides consistent, predictable behavior.
  */
 
-/*****************************************************************************
- *  Constants
- *****************************************************************************/
-
 #define BASE64_MAGIC    0xDEADBEEF
 #define BASE64_ERR      0xFF
 #define BASE64_IGN      0xFE
 #define BASE64_PAD      0xFD
 #define BASE64_PAD_CHAR '='
-
-/*****************************************************************************
- *  Private Variables
- *****************************************************************************/
 
 static const unsigned char bin2asc[] = \
     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
@@ -93,10 +84,6 @@ static const unsigned char asc2bin[256] = {
     0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
     0xff, 0xff, 0xff, 0xff
 };
-
-/*****************************************************************************
- *  Public Functions
- *****************************************************************************/
 
 /**
  *  Initialize the base64 context [x] for base64 encoding/decoding.
@@ -462,11 +449,11 @@ base64_decode_length (int srclen)
     return (((srclen + 3) / 4) * 3) + 1;
 }
 
-/*****************************************************************************
+/******************************************************************************
  *  Table Initialization Routines
- *****************************************************************************/
+ */
 
-#ifdef BASE64_INIT
+#ifdef MUNGE_BASE64_INIT
 
 #include <ctype.h>
 #include <stdio.h>
@@ -524,4 +511,4 @@ base64_print_table (unsigned char *data, int len, char *name, int col)
     printf ("\n};\n");
 }
 
-#endif /* BASE64_INIT */
+#endif /* MUNGE_BASE64_INIT */

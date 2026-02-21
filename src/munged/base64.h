@@ -1,4 +1,4 @@
-/*****************************************************************************
+/******************************************************************************
  *  Copyright (C) 2007-2026 Lawrence Livermore National Security, LLC.
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  UCRL-CODE-155910.
@@ -24,19 +24,12 @@
  *  <https://www.gnu.org/licenses/>.
  *****************************************************************************/
 
-
-#ifndef BASE64_H
-#define BASE64_H
-
+#ifndef MUNGE_BASE64_H
+#define MUNGE_BASE64_H
 
 #if HAVE_CONFIG_H
 #  include <config.h>
 #endif /* HAVE_CONFIG_H */
-
-
-/*****************************************************************************
- *  Data Types
- *****************************************************************************/
 
 typedef struct {
     unsigned char buf[3];
@@ -47,11 +40,6 @@ typedef struct {
     int finalized;
 #endif /* !NDEBUG */
 } base64_ctx;
-
-
-/*****************************************************************************
- *  Prototypes
- *****************************************************************************/
 
 int base64_init (base64_ctx *x);
 
@@ -75,5 +63,4 @@ int base64_encode_length (int srclen);
 
 int base64_decode_length (int srclen);
 
-
-#endif /* !BASE64_H */
+#endif /* !MUNGE_BASE64_H */
