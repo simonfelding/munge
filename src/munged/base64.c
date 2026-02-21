@@ -43,16 +43,15 @@
  *  For details on base64 encoding/decoding, refer to
  *    rfc2440 (OpenPGP Message Format) sections 6.3-6.5.
  *
- *  Why am I not using OpenSSL's base64 encoding/decoding functions?
- *    Because they have the following fucked functionality:
- *  For base64-encoding, use of the context results in output that is broken
- *    into 64-character lines; however, EVP_EncodeBlock() output is not broken.
- *  For base64-decoding, use of the context returns the correct length of the
- *    resulting output; however, EVP_DecodeBlock() returns a length that may
- *    be up to two characters too long.
- *  Finally, data base64-encoded via a context has to be decoded via a context,
- *    and data base64-encoded w/o a context has to be decoded w/o a context.
- *  So fuck it, I wrote my own.  :-P
+ *  OpenSSL's base64 API has inconsistent behavior:
+ *  - For encoding: context-based functions insert line breaks at 64 chars,
+ *    but EVP_EncodeBlock() does not.
+ *  - For decoding: context-based functions return accurate output length,
+ *    but EVP_DecodeBlock() may overestimate by up to two bytes.
+ *  - Data encoded via a context must be decoded via a context;
+ *    data encoded without a context must be decoded without a context.
+ *
+ *  This custom implementation provides consistent, predictable behavior.
  */
 
 /*****************************************************************************
