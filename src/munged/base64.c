@@ -24,7 +24,6 @@
  *  <https://www.gnu.org/licenses/>.
  *****************************************************************************/
 
-
 #if HAVE_CONFIG_H
 #  include <config.h>
 #endif /* HAVE_CONFIG_H */
@@ -35,13 +34,12 @@
 #include <string.h>
 #include "base64.h"
 
-
 /*****************************************************************************
  *  Notes
  *****************************************************************************/
 /*
  *  For details on base64 encoding/decoding, refer to
- *    rfc2440 (OpenPGP Message Format) sections 6.3-6.5.
+ *  rfc2440 (OpenPGP Message Format) sections 6.3-6.5.
  *
  *  OpenSSL's base64 API has inconsistent behavior:
  *  - For encoding: context-based functions insert line breaks at 64 chars,
@@ -64,9 +62,8 @@
 #define BASE64_PAD      0xFD
 #define BASE64_PAD_CHAR '='
 
-
 /*****************************************************************************
- *  Static Variables
+ *  Private Variables
  *****************************************************************************/
 
 static const unsigned char bin2asc[] = \
@@ -97,13 +94,14 @@ static const unsigned char asc2bin[256] = {
     0xff, 0xff, 0xff, 0xff
 };
 
-
 /*****************************************************************************
- *  Extern Functions
+ *  Public Functions
  *****************************************************************************/
 
-/*  Initializes the base64 context [x] for base64 encoding/decoding of data.
- *  Returns 0 on success, or -1 on error.
+/**
+ *  Initialize the base64 context [x] for base64 encoding/decoding.
+ *
+ *  Return 0 on success, or -1 on error (with errno set).
  */
 int
 base64_init (base64_ctx *x)
@@ -119,11 +117,13 @@ base64_init (base64_ctx *x)
     return 0;
 }
 
-
-/*  Updates the base64 context [x], encoding [srclen] bytes from [src]
- *    into [dst], and setting [dstlen] to the number of bytes written.
- *  This can be called multiple times to process successive blocks of data.
- *  Returns 0 on success, or -1 on error.
+/**
+ *  Update the base64 context [x] by encoding [srclen] bytes from [src]
+ *  into [dst], setting [dstlen] to the number of bytes written.
+ *
+ *  Call this multiple times to process successive blocks of data.
+ *
+ *  Return 0 on success, or -1 on error (with errno set).
  */
 int
 base64_encode_update (base64_ctx *x, void *vdst, int *dstlen,
@@ -177,13 +177,13 @@ base64_encode_update (base64_ctx *x, void *vdst, int *dstlen,
     return 0;
 }
 
-
-/*  Finalizes the base64 context [x], encoding the "final" data remaining
- *    in a partial block into [dst], and setting [dstlen] to the number of
- *    bytes written.
- *  After calling this function, no further updates should be made to [x]
- *    without re-initializing it first.
- *  Returns 0 on success, or -1 on error.
+/**
+ *  Finalize the base64 context [x] by encoding remaining data from a partial
+ *  block into [dst], setting [dstlen] to the number of bytes written.
+ *
+ *  Do not make further updates to [x] without re-initializing it first.
+ *
+ *  Return 0 on success, or -1 on error (with errno set).
  */
 int
 base64_encode_final (base64_ctx *x, void *dst, int *dstlen)
@@ -208,13 +208,15 @@ base64_encode_final (base64_ctx *x, void *dst, int *dstlen)
     return 0;
 }
 
-
-/*  Updates the base64 context [x], decoding [srclen] bytes from [src]
- *    into [dst], and setting [dstlen] to the number of bytes written.
- *  This can be called multiple times to process successive blocks of data.
- *  Returns 0 on success, or -1 on error.
+/**
+ *  Update the base64 context [x] by decoding [srclen] bytes from [src]
+ *  into [dst], setting [dstlen] to the number of bytes written.
  *
- *  Note: Context [x] should only be NULL when called via base64_decode_block().
+ *  Call this multiple times to process successive blocks of data.
+ *
+ *  Return 0 on success, or -1 on error (with errno set).
+ *
+ *  Note: Context [x] may be NULL when called via base64_decode_block().
  */
 int
 base64_decode_update (base64_ctx *x, void *dst, int *dstlen,
@@ -297,13 +299,13 @@ base64_decode_update (base64_ctx *x, void *dst, int *dstlen,
     return (err ? -1 : 0);
 }
 
-
-/*  Finalizes the base64 context [x], decoding the "final" data remaining
- *    in a partial block into [dst], and setting [dstlen] to the number of
- *    bytes written.
- *  After calling this function, no further updates should be made to [x]
- *    without re-initializing it first.
- *  Returns 0 on success, or -1 on error.
+/**
+ *  Finalize the base64 context [x], setting [dstlen] to the number of bytes
+ *  written to [dst].
+ *
+ *  Do not make further updates to [x] without re-initializing it first.
+ *
+ *  Return 0 on success, or -1 on error (with errno set).
  */
 int
 base64_decode_final (base64_ctx *x, void *dst, int *dstlen)
@@ -326,9 +328,10 @@ base64_decode_final (base64_ctx *x, void *dst, int *dstlen)
     return rc;
 }
 
-
-/*  Clears the base64 context [x].
- *  Returns 0 on success, or -1 on error.
+/**
+ *  Clear the base64 context [x], zeroing all fields.
+ *
+ *  Return 0 on success, or -1 on error (with errno set).
  */
 int
 base64_cleanup (base64_ctx *x)
@@ -344,10 +347,11 @@ base64_cleanup (base64_ctx *x)
     return 0;
 }
 
-
-/*  Base64-encodes [srclen] bytes from the contiguous [src] into [dst],
- *    and sets [dstlen] to the number of bytes written.
- *  Returns 0 on success, or -1 on error.
+/**
+ *  Base64-encode [srclen] bytes from [src] into [dst], setting [dstlen]
+ *  to the number of bytes written.
+ *
+ *  Return 0 on success, or -1 on error (with errno set).
  */
 int
 base64_encode_block (void *dst, int *dstlen, const void *src, int srclen)
@@ -391,10 +395,11 @@ base64_encode_block (void *dst, int *dstlen, const void *src, int srclen)
     return 0;
 }
 
-
-/*  Base64-decodes [srclen] bytes from the contiguous [src] into [dst],
- *    and sets [dstlen] to the number of bytes written.
- *  Returns 0 on success, or -1 on error.
+/**
+ *  Base64-decode [srclen] bytes from [src] into [dst], setting [dstlen]
+ *  to the number of bytes written.
+ *
+ *  Return 0 on success, or -1 on error (with errno set).
  */
 int
 base64_decode_block (void *dst, int *dstlen, const void *src, int srclen)
@@ -402,10 +407,11 @@ base64_decode_block (void *dst, int *dstlen, const void *src, int srclen)
     return base64_decode_update (NULL, dst, dstlen, src, srclen);
 }
 
-
-/*  Returns the size (in bytes) of the destination memory block required
- *    for base64 encoding a block of [srclen] bytes.
- *  Returns -1 if srclen is invalid or would cause integer overflow.
+/**
+ *  Calculate the buffer size (in bytes) required for base64 encoding
+ *  [srclen] bytes.
+ *
+ *  Return the required size, or -1 on error (with errno set).
  */
 int
 base64_encode_length (int srclen)
@@ -422,21 +428,22 @@ base64_encode_length (int srclen)
     }
 /*  When encoding, 3 bytes are encoded into 4 characters.
  *  Add 2 bytes to ensure a partial 3-byte chunk will be accounted for
- *    during integer division, then add 1 byte for the terminating null byte.
+ *  during integer division, then add 1 byte for the terminating null byte.
  */
     return (((srclen + 2) / 3) * 4) + 1;
 }
 
-
-/*  Returns the size (in bytes) of the destination memory block required
- *    for base64 decoding a block of [srclen] bytes.
- *  Returns -1 if srclen is invalid or would cause integer overflow.
+/**
+ *  Calculate the buffer size (in bytes) required for base64 decoding
+ *  [srclen] bytes.
+ *
+ *  Return the required size, or -1 on error (with errno set).
  */
 int
 base64_decode_length (int srclen)
 {
 /*  Use unsigned arithmetic to prevent constant-expression overflow on ILP32
- *    platforms where sizeof(int) == sizeof(long).
+ *  platforms where sizeof(int) == sizeof(long).
  */
     const unsigned maxlen = (((unsigned) (INT_MAX - 1) / 3) * 4) - 3;
 
@@ -450,11 +457,10 @@ base64_decode_length (int srclen)
     }
 /*  When decoding, 4 characters are decoded into 3 bytes.
  *  Add 3 bytes to ensure a partial 4-byte chunk will be accounted for
- *    during integer division, then add 1 byte for the terminating null byte.
+ *  during integer division, then add 1 byte for the terminating null byte.
  */
     return (((srclen + 3) / 4) * 3) + 1;
 }
-
 
 /*****************************************************************************
  *  Table Initialization Routines
@@ -462,18 +468,14 @@ base64_decode_length (int srclen)
 
 #ifdef BASE64_INIT
 
-
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 
-
 #define BASE64_DEF_COLS 12
-
 
 void base64_build_table (unsigned char *data, int len);
 void base64_print_table (unsigned char *data, int len, char *name, int col);
-
 
 int
 main (int argc, char *argv[])
@@ -488,7 +490,6 @@ main (int argc, char *argv[])
     exit (EXIT_SUCCESS);
 }
 
-
 void
 base64_build_table (unsigned char *data, int len)
 {
@@ -500,7 +501,6 @@ base64_build_table (unsigned char *data, int len)
         data[bin2asc[i]] = i;
     data[BASE64_PAD_CHAR] = BASE64_PAD;
 }
-
 
 void
 base64_print_table (unsigned char *data, int len, char *name, int col)
@@ -523,6 +523,5 @@ base64_print_table (unsigned char *data, int len, char *name, int col)
     }
     printf ("\n};\n");
 }
-
 
 #endif /* BASE64_INIT */
