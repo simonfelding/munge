@@ -39,12 +39,12 @@
  *****************************************************************************/
 
 typedef struct {
-    unsigned char       buf[3];
-    int                 num;
-    int                 pad;
+    unsigned char buf[3];
+    int num;
+    int pad;
 #ifndef NDEBUG
-    int                 magic;
-    int                 finalized;
+    int magic;
+    int finalized;
 #endif /* !NDEBUG */
 } base64_ctx;
 
@@ -56,12 +56,12 @@ typedef struct {
 int base64_init (base64_ctx *x);
 
 int base64_encode_update (base64_ctx *x, void *dst, int *dstlen,
-                          const void *src, int srclen);
+        const void *src, int srclen);
 
 int base64_encode_final (base64_ctx *x, void *dst, int *dstlen);
 
 int base64_decode_update (base64_ctx *x, void *dst, int *dstlen,
-                          const void *src, int srclen);
+        const void *src, int srclen);
 
 int base64_decode_final (base64_ctx *x, void *dst, int *dstlen);
 

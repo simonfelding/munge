@@ -216,13 +216,13 @@ base64_decode_update (base64_ctx *x, void *dst, int *dstlen,
 {
 /*  Context [x] should only be NULL when called via base64_decode_block().
  */
-    int                  i = 0;
-    int                  err = 0;
-    int                  pad = 0;
-    unsigned char       *pdst;
+    int i = 0;
+    int err = 0;
+    int pad = 0;
+    unsigned char *pdst;
     const unsigned char *psrc;
     const unsigned char *psrc_last;
-    unsigned char        c;
+    unsigned char c;
 
     assert ((x == NULL) || (x->magic == BASE64_MAGIC));
     assert ((x == NULL) || (x->finalized != 1));
@@ -337,9 +337,9 @@ base64_cleanup (base64_ctx *x)
 int
 base64_encode_block (void *dst, int *dstlen, const void *src, int srclen)
 {
-    unsigned char       *pdst;
+    unsigned char *pdst;
     const unsigned char *psrc;
-    int                  n;
+    int n;
 
     pdst = dst;
     psrc = src;
