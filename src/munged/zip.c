@@ -107,66 +107,60 @@ zip_validate_type (munge_zip_t type)
 }
 
 
-/*  Compresses the [src] buffer of length [srclen] in a single pass using the
- *    compression method [type].  The resulting compressed output is stored
- *    in the [dst] buffer.
- *  Upon entry, [*pdstlen] must be set to the size of the [dst] buffer.
- *  Upon exit, [*pdstlen] is set to the size of the compressed data.
+/*  Compresses the [vsrc] buffer of length [isrclen] in a single pass using the
+ *    compression method [type].  The resulting compressed output is stored in
+ *    the [vdst] buffer.
+ *  Upon entry, [*idstlen] must be set to the size of the [vdst] buffer.
+ *  Upon exit, [*idstlen] is set to the size of the compressed data.
  *  Returns 0 on success, or -1 or error.
  */
 int
 zip_compress_block (munge_zip_t type,
-                    void *dst, int *pdstlen, const void *src, int srclen)
+                    void *vdst, int *idstlen, const void *vsrc, int isrclen)
 {
-    unsigned char *xdst;
-    unsigned int   xdstlen;
-    unsigned char *xsrc;
-    unsigned int   xsrclen;
-    zip_meta_t    *pmeta;
+    unsigned char *dst;
+    unsigned long  dstlen;
+    unsigned char *src;
+    unsigned long  srclen;
+    zip_meta_t    *meta;
 
     if (zip_validate_type (type) < 0) {
         errno = EINVAL;
         return -1;
     }
-    if (!dst || !pdstlen || *pdstlen < 0 || !src || srclen < 0) {
+    if (!vdst || !idstlen || *idstlen < 0 || !vsrc || isrclen < 0) {
         errno = EINVAL;
         return -1;
     }
-    if (*pdstlen < sizeof (zip_meta_t)) {
+    if (*idstlen < sizeof (zip_meta_t)) {
         errno = EMSGSIZE;
         return -1;
     }
-    xdst = (unsigned char *) dst + sizeof (zip_meta_t);
-    xdstlen = *pdstlen - sizeof (zip_meta_t);
-    xsrc = (unsigned char *) src;
-    xsrclen = srclen;
+    dst = (unsigned char *) vdst + sizeof (zip_meta_t);
+    dstlen = (unsigned long) *idstlen - sizeof (zip_meta_t);
+    src = (unsigned char *) vsrc;
+    srclen = (unsigned long) isrclen;
 
-    if (xsrclen == 0) {
-        xdstlen = 0;
+    if (srclen == 0) {
+        dstlen = 0;
     }
 #if HAVE_PKG_BZLIB
     else if (type == MUNGE_ZIP_BZLIB) {
-        if (BZ2_bzBuffToBuffCompress ((char *) xdst, &xdstlen,
-                (char *) xsrc, xsrclen, 9, 0, 0) != BZ_OK) {
+        unsigned int u = (unsigned int) dstlen;
+        if (BZ2_bzBuffToBuffCompress ((char *) dst, &u, (char *) src,
+                (unsigned int) srclen, 9, 0, 0) != BZ_OK) {
             errno = EIO;
             return -1;
         }
+        dstlen = (unsigned long) u;
     }
 #endif /* HAVE_PKG_BZLIB */
 #if HAVE_PKG_ZLIB
-    /*
-     *  XXX: The use of the "xdstlen_ul" temporary variable is to avoid the
-     *       gcc3.3 compiler warning: "dereferencing type-punned pointer
-     *       will break strict-aliasing rules".  A mere cast doesn't suffice.
-     */
     else if (type == MUNGE_ZIP_ZLIB) {
-        unsigned long xdstlen_ul = xdstlen;
-        if (compress (xdst, &xdstlen_ul,
-                xsrc, (unsigned long) xsrclen) != Z_OK) {
+        if (compress (dst, &dstlen, src, srclen) != Z_OK) {
             errno = EIO;
             return -1;
         }
-        xdstlen = xdstlen_ul;
     }
 #endif /* HAVE_PKG_ZLIB */
     else {
@@ -174,91 +168,85 @@ zip_compress_block (munge_zip_t type,
         errno = EINVAL;
         return -1;
     }
-    xdstlen += sizeof (zip_meta_t);
-    if (xdstlen > INT_MAX) {
+    dstlen += sizeof (zip_meta_t);
+    if (dstlen > INT_MAX) {
         errno = ERANGE;
         return -1;
     }
-    *pdstlen = (int) xdstlen;
-    pmeta = dst;
-    pmeta->magic = htonl (ZIP_MAGIC);
-    pmeta->length = htonl (xsrclen);
+    *idstlen = (int) dstlen;
+    meta = (zip_meta_t *) vdst;
+    meta->magic = htonl (ZIP_MAGIC);
+    meta->length = htonl (srclen);
     return 0;
 }
 
 
-/*  Decompresses the [src] buffer of length [srclen] in a single pass using the
- *    compression method [type].  The resulting decompressed (original) output
- *    is stored in the [dst] buffer.
- *  Upon entry, [*pdstlen] must be set to the size of the [dst] buffer.
- *  Upon exit, [*pdstlen] is set to the size of the decompressed data.
+/*  Decompresses the [vsrc] buffer of length [isrclen] in a single pass using
+ *    the compression method [type].  The resulting decompressed (original)
+ *    output is stored in the [vdst] buffer.
+ *  Upon entry, [*idstlen] must be set to the size of the [vdst] buffer.
+ *  Upon exit, [*idstlen] is set to the size of the decompressed data.
  *  Returns 0 on success, or -1 or error.
  */
 int
 zip_decompress_block (munge_zip_t type,
-                      void *dst, int *pdstlen, const void *src, int srclen)
+                      void *vdst, int *idstlen, const void *vsrc, int isrclen)
 {
-    unsigned char *xdst;
-    unsigned int   xdstlen;
-    unsigned char *xsrc;
-    unsigned int   xsrclen;
+    unsigned char *dst;
+    unsigned long  dstlen;
+    unsigned char *src;
+    unsigned long  srclen;
     int            n;
 
     if (zip_validate_type (type) < 0) {
         errno = EINVAL;
         return -1;
     }
-    if (!dst || !pdstlen || *pdstlen < 0 || !src \
-            || srclen < sizeof (zip_meta_t)) {
+    if (!vdst || !idstlen || *idstlen < 0 || !vsrc \
+            || isrclen < sizeof (zip_meta_t)) {
         errno = EINVAL;
         return -1;
     }
-    n = zip_decompress_length (type, src, srclen);
+    n = zip_decompress_length (type, vsrc, isrclen);
     if (n < 0) {
         /* errno already set */
         return -1;
     }
-    if (*pdstlen < n) {
+    if (*idstlen < n) {
         errno = EMSGSIZE;
         return -1;
     }
-    xdst = dst;
-    xdstlen = *pdstlen;
-    xsrc = (unsigned char *) src + sizeof (zip_meta_t);
-    xsrclen = srclen - sizeof (zip_meta_t);
+    dst = (unsigned char *) vdst;
+    dstlen = (unsigned long) *idstlen;
+    src = (unsigned char *) vsrc + sizeof (zip_meta_t);
+    srclen = (unsigned long) isrclen - sizeof (zip_meta_t);
 
 #if HAVE_PKG_BZLIB
     if (type == MUNGE_ZIP_BZLIB) {
-        if (BZ2_bzBuffToBuffDecompress ((char *) xdst, &xdstlen,
-                (char *) xsrc, xsrclen, 0, 0) != BZ_OK) {
+        unsigned int u = (unsigned int) dstlen;
+        if (BZ2_bzBuffToBuffDecompress ((char *) dst, &u, (char *) src,
+                (unsigned int) srclen, 0, 0) != BZ_OK) {
             errno = EIO;
             return -1;
         }
+        dstlen = (unsigned long) u;
     }
 #endif /* HAVE_PKG_BZLIB */
 
 #if HAVE_PKG_ZLIB
-    /*
-     *  XXX: The use of the "xdstlen_ul" temporary variable is to avoid the
-     *       gcc3.3 compiler warning: "dereferencing type-punned pointer
-     *       will break strict-aliasing rules".  A mere cast doesn't suffice.
-     */
     if (type == MUNGE_ZIP_ZLIB) {
-        unsigned long xdstlen_ul = xdstlen;
-        if (uncompress (xdst, &xdstlen_ul,
-                xsrc, (unsigned long) xsrclen) != Z_OK) {
+        if (uncompress (dst, &dstlen, src, srclen) != Z_OK) {
             errno = EIO;
             return -1;
         }
-        xdstlen = xdstlen_ul;
     }
 #endif /* HAVE_PKG_ZLIB */
 
-    if (xdstlen > INT_MAX) {
+    if (dstlen > INT_MAX) {
         errno = ERANGE;
         return -1;
     }
-    *pdstlen = (int) xdstlen;
+    *idstlen = (int) dstlen;
     return 0;
 }
 
