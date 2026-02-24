@@ -123,17 +123,16 @@ zip_compress_block (munge_zip_t type,
     unsigned int   xsrclen;
     zip_meta_t    *pmeta;
 
-    assert (dst != NULL);
-    assert (pdstlen != NULL);
-    assert (src != NULL);
-
     if (zip_validate_type (type) < 0) {
+        errno = EINVAL;
+        return -1;
+    }
+    if (!dst || !pdstlen || *pdstlen < 0 || !src || srclen < 0) {
+        errno = EINVAL;
         return -1;
     }
     if (*pdstlen < sizeof (zip_meta_t)) {
-        return -1;
-    }
-    if (srclen <= 0) {
+        errno = EMSGSIZE;
         return -1;
     }
     xdst = (unsigned char *) dst + sizeof (zip_meta_t);
@@ -189,11 +188,13 @@ zip_decompress_block (munge_zip_t type,
     unsigned int   xsrclen;
     int            n;
 
-    assert (dst != NULL);
-    assert (pdstlen != NULL);
-    assert (src != NULL);
-
     if (zip_validate_type (type) < 0) {
+        errno = EINVAL;
+        return -1;
+    }
+    if (!dst || !pdstlen || *pdstlen < 0 || !src \
+            || srclen < sizeof (zip_meta_t)) {
+        errno = EINVAL;
         return -1;
     }
     n = zip_decompress_length (type, src, srclen);
@@ -201,9 +202,6 @@ zip_decompress_block (munge_zip_t type,
         return -1;
     }
     if (*pdstlen < n) {
-        return -1;
-    }
-    if (srclen <= 0) {
         return -1;
     }
     xdst = dst;
@@ -255,6 +253,10 @@ zip_compress_length (munge_zip_t type, const void *src, int len)
  *
  *  XXX: Note the [src] parm is not currently used here.
  */
+    if (!src || len < 0) {
+        errno = EINVAL;
+        return -1;
+    }
 #if HAVE_PKG_BZLIB
     if (type == MUNGE_ZIP_BZLIB)
         return (int) ((len * 1.01) + 600 + 1 + sizeof (zip_meta_t));
@@ -265,6 +267,7 @@ zip_compress_length (munge_zip_t type, const void *src, int len)
         return (int) ((len * 1.001) + 12 + 1 + sizeof (zip_meta_t));
 #endif /* HAVE_PKG_ZLIB */
 
+    errno = EINVAL;
     return -1;
 }
 
@@ -279,9 +282,12 @@ zip_decompress_length (munge_zip_t type, const void *src, int len)
  */
     zip_meta_t    *pmeta;
 
-    assert (src != NULL);
-
+    if (!src) {
+        errno = EINVAL;
+        return -1;
+    }
     if (len < sizeof (zip_meta_t)) {
+        errno = EINVAL;
         return -1;
     }
     pmeta = (void *) src;
