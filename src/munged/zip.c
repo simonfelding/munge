@@ -39,6 +39,7 @@
 #endif /* HAVE_ZLIB_H */
 
 #include <assert.h>
+#include <errno.h>
 #include <inttypes.h>
 #include <netinet/in.h>
 #include <string.h>
@@ -82,24 +83,26 @@ typedef struct {
  *  Public Functions
  *****************************************************************************/
 
-/*  Returns non-zero if the given [type] is a supported valid MUNGE compression
- *    type according to the current configuration.  The NONE and DEFAULT types
- *    are not considered valid types by this routine.
+/*  Validate the compression type.
+ *  Return 0 if valid, or -1 if invalid (with errno set).
  */
 int
-zip_is_valid_type (munge_zip_t type)
+zip_validate_type (munge_zip_t type)
 {
 #if HAVE_PKG_BZLIB
-    if (type == MUNGE_ZIP_BZLIB)
-        return (1);
+    if (type == MUNGE_ZIP_BZLIB) {
+        return 0;
+    }
 #endif /* HAVE_PKG_BZLIB */
 
 #if HAVE_PKG_ZLIB
-    if (type == MUNGE_ZIP_ZLIB)
-        return (1);
+    if (type == MUNGE_ZIP_ZLIB) {
+        return 0;
+    }
 #endif /* HAVE_PKG_ZLIB */
 
-    return (0);
+    errno = EINVAL;
+    return -1;
 }
 
 
@@ -124,7 +127,7 @@ zip_compress_block (munge_zip_t type,
     assert (pdstlen != NULL);
     assert (src != NULL);
 
-    if (!zip_is_valid_type (type)) {
+    if (zip_validate_type (type) < 0) {
         return (-1);
     }
     if (*pdstlen < sizeof (zip_meta_t)) {
@@ -190,7 +193,7 @@ zip_decompress_block (munge_zip_t type,
     assert (pdstlen != NULL);
     assert (src != NULL);
 
-    if (!zip_is_valid_type (type)) {
+    if (zip_validate_type (type) < 0) {
         return (-1);
     }
     n = zip_decompress_length (type, src, srclen);

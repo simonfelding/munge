@@ -455,7 +455,7 @@ dec_unpack_outer (munge_cred_t c)
         ; /* not compressed */
     }
     else {
-        if (!zip_is_valid_type (m->zip)) {
+        if (zip_validate_type (m->zip) < 0) {
             return (m_msg_set_err (m, EMUNGE_BAD_ZIP,
                 strdupf ("Invalid compression type %d", m->zip)));
         }
@@ -715,7 +715,7 @@ dec_decompress (munge_cred_t c)
     }
     /*  Compression type already checked by dec_unpack_outer().
      */
-    assert (zip_is_valid_type (m->zip));
+    assert (zip_validate_type (m->zip) == 0);
     /*
      *  Allocate memory for decompressed "inner" data.
      */

@@ -41,7 +41,7 @@
  *  Prototypes
  *****************************************************************************/
 
-int zip_is_valid_type (munge_zip_t type);
+int zip_validate_type (munge_zip_t type);
 
 int zip_compress_block (munge_zip_t type,
     void *dst, int *pdstlen, const void *src, int srclen);
