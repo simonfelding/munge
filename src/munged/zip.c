@@ -174,7 +174,12 @@ zip_compress_block (munge_zip_t type,
         errno = EINVAL;
         return -1;
     }
-    *pdstlen = xdstlen + sizeof (zip_meta_t);
+    xdstlen += sizeof (zip_meta_t);
+    if (xdstlen > INT_MAX) {
+        errno = ERANGE;
+        return -1;
+    }
+    *pdstlen = (int) xdstlen;
     pmeta = dst;
     pmeta->magic = htonl (ZIP_MAGIC);
     pmeta->length = htonl (xsrclen);
@@ -249,7 +254,11 @@ zip_decompress_block (munge_zip_t type,
     }
 #endif /* HAVE_PKG_ZLIB */
 
-    *pdstlen = xdstlen;
+    if (xdstlen > INT_MAX) {
+        errno = ERANGE;
+        return -1;
+    }
+    *pdstlen = (int) xdstlen;
     return 0;
 }
 
