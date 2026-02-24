@@ -41,6 +41,7 @@
 #include <assert.h>
 #include <errno.h>
 #include <inttypes.h>
+#include <limits.h>
 #include <netinet/in.h>
 #include <string.h>
 #include <munge.h>
@@ -269,6 +270,8 @@ zip_compress_length (munge_zip_t type, const void *src, int len)
  *
  *  XXX: Note the [src] parm is not currently used here.
  */
+    double result;
+
     if (!src || len < 0) {
         errno = EINVAL;
         return -1;
@@ -277,13 +280,25 @@ zip_compress_length (munge_zip_t type, const void *src, int len)
         return sizeof (zip_meta_t);
     }
 #if HAVE_PKG_BZLIB
-    if (type == MUNGE_ZIP_BZLIB)
-        return (int) ((len * 1.01) + 600 + 1 + sizeof (zip_meta_t));
+    if (type == MUNGE_ZIP_BZLIB) {
+        result = (len * 1.01) + 600 + 1 + sizeof (zip_meta_t);
+        if (result > INT_MAX) {
+            errno = ERANGE;
+            return -1;
+        }
+        return (int) result;
+    }
 #endif /* HAVE_PKG_BZLIB */
 
 #if HAVE_PKG_ZLIB
-    if (type == MUNGE_ZIP_ZLIB)
-        return (int) ((len * 1.001) + 12 + 1 + sizeof (zip_meta_t));
+    if (type == MUNGE_ZIP_ZLIB) {
+        result = (len * 1.001) + 12 + 1 + sizeof (zip_meta_t);
+        if (result > INT_MAX) {
+            errno = ERANGE;
+            return -1;
+        }
+        return (int) result;
+    }
 #endif /* HAVE_PKG_ZLIB */
 
     errno = EINVAL;
@@ -299,7 +314,8 @@ zip_decompress_length (munge_zip_t type, const void *src, int len)
 {
 /*  XXX: Note the [type] parm is not currently used here.
  */
-    zip_meta_t    *pmeta;
+    zip_meta_t    *meta;
+    uint32_t       orig_len;
 
     if (!src) {
         errno = EINVAL;
@@ -309,10 +325,15 @@ zip_decompress_length (munge_zip_t type, const void *src, int len)
         errno = EINVAL;
         return -1;
     }
-    pmeta = (void *) src;
-    if (ntohl (pmeta->magic) != ZIP_MAGIC) {
+    meta = (void *) src;
+    if (ntohl (meta->magic) != ZIP_MAGIC) {
         errno = EBADMSG;
         return -1;
     }
-    return (int) ntohl (pmeta->length);
+    orig_len = ntohl (meta->length);
+    if (orig_len > INT_MAX) {
+        errno = ERANGE;
+        return -1;
+    }
+    return (int) orig_len;
 }
