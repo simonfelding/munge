@@ -53,13 +53,13 @@
  *  Notes
  *****************************************************************************/
 /*
- *  Neither the zlib nor bzlib compression routines encode the original length
- *    of the uncompressed data in the compressed output.
- *  The following "zip" routines allocate an additional 8 bytes of metadata
- *    (zip_meta_t) that is prepended to the compressed output for this purpose.
- *    The first 4 bytes contain a sentinel to check if the metadata is valid.
- *    The next 4 bytes contain the original length of the uncompressed data.
- *    Both values are in MSBF (ie, big endian) format.
+ *  Neither zlib nor bzlib encode the original uncompressed data length in
+ *  their compressed output.
+ *
+ *  The compression functions prepend 8 bytes of metadata (zip_meta_t) to the
+ *  compressed output for this purpose:
+ *  - Bytes 0-3: sentinel value to validate metadata (big endian)
+ *  - Bytes 4-7: original uncompressed data length (big endian)
  */
 
 
@@ -84,7 +84,8 @@ typedef struct {
  *  Public Functions
  *****************************************************************************/
 
-/*  Validate the compression type.
+/**
+ *  Validate the compression type.
  *  Return 0 if valid, or -1 if invalid (with errno set).
  */
 int
@@ -107,12 +108,12 @@ zip_validate_type (munge_zip_t type)
 }
 
 
-/*  Compresses the [vsrc] buffer of length [isrclen] in a single pass using the
- *    compression method [type].  The resulting compressed output is stored in
- *    the [vdst] buffer.
- *  Upon entry, [*idstlen] must be set to the size of the [vdst] buffer.
- *  Upon exit, [*idstlen] is set to the size of the compressed data.
- *  Returns 0 on success, or -1 or error.
+/**
+ *  Compress data in a single pass using the specified compression method.
+ *  The [vsrc] buffer of [isrclen] bytes is compressed into [vdst].
+ *  On entry, [*idstlen] must contain the size of [vdst].
+ *  On exit, [*idstlen] contains the size of compressed data.
+ *  Return 0 on success, or -1 on error (with errno set).
  */
 int
 zip_compress_block (munge_zip_t type,
@@ -181,12 +182,12 @@ zip_compress_block (munge_zip_t type,
 }
 
 
-/*  Decompresses the [vsrc] buffer of length [isrclen] in a single pass using
- *    the compression method [type].  The resulting decompressed (original)
- *    output is stored in the [vdst] buffer.
- *  Upon entry, [*idstlen] must be set to the size of the [vdst] buffer.
- *  Upon exit, [*idstlen] is set to the size of the decompressed data.
- *  Returns 0 on success, or -1 or error.
+/**
+ *  Decompress data in a single pass using the specified compression method.
+ *  The [vsrc] buffer of [isrclen] bytes is decompressed into [vdst].
+ *  On entry, [*idstlen] must contain the size of [vdst].
+ *  On exit, [*idstlen] contains the size of decompressed data.
+ *  Return 0 on success, or -1 on error (with errno set).
  */
 int
 zip_decompress_block (munge_zip_t type,
@@ -251,22 +252,19 @@ zip_decompress_block (munge_zip_t type,
 }
 
 
-/*  Returns a worst-case estimate for the buffer length needed to compress data
- *    in the [src] buffer of length [len] using the compression method [type],
- *    or -1 on error.
+/**
+ *  Calculate the buffer size (in bytes) required for compressing [len] bytes
+ *  using the specified compression method.  This is a worst-case estimate:
+ *  - bzlib: 1% larger than input + 600 bytes
+ *  - zlib:  0.1% larger than input + 12 bytes
+ *  The calculation includes space for 8 bytes of metadata (magic + length).
+ *  Return the required size, or -1 on error (with errno set).
+ *
+ *  Note: The [src] parameter is currently unused.
  */
 int
 zip_compress_length (munge_zip_t type, const void *src, int len)
 {
-/*  For zlib "deflate" compression, allocate an output buffer at least 0.1%
- *    larger than the uncompressed input, plus an additional 12 bytes.
- *  For bzlib compression, allocate an output buffer at least 1% larger than
- *    the uncompressed input, plus an additional 600 bytes.
- *  Also reserve space for encoding the size of the uncompressed data.
- *  The "+1" is for the double-to-int conversion to perform a ceiling function.
- *
- *  XXX: Note the [src] parm is not currently used here.
- */
     double result;
 
     if (!src || len < 0) {
@@ -303,14 +301,15 @@ zip_compress_length (munge_zip_t type, const void *src, int len)
 }
 
 
-/*  Returns the decompressed (original) length of the compressed data
- *    in the [src] buffer of length [len], or -1 on error.
+/**
+ *  Extract the decompressed (original) size from compressed data metadata.
+ *  Return the decompressed size, or -1 on error (with errno set).
+ *
+ *  Note: The [type] parameter is currently unused.
  */
 int
 zip_decompress_length (munge_zip_t type, const void *src, int len)
 {
-/*  XXX: Note the [type] parm is not currently used here.
- */
     zip_meta_t    *meta;
     uint32_t       orig_len;
 
