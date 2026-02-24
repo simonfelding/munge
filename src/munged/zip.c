@@ -146,8 +146,10 @@ zip_compress_block (munge_zip_t type,
 #if HAVE_PKG_BZLIB
     else if (type == MUNGE_ZIP_BZLIB) {
         if (BZ2_bzBuffToBuffCompress ((char *) xdst, &xdstlen,
-                (char *) xsrc, xsrclen, 9, 0, 0) != BZ_OK)
+                (char *) xsrc, xsrclen, 9, 0, 0) != BZ_OK) {
+            errno = EIO;
             return -1;
+        }
     }
 #endif /* HAVE_PKG_BZLIB */
 #if HAVE_PKG_ZLIB
@@ -159,8 +161,10 @@ zip_compress_block (munge_zip_t type,
     else if (type == MUNGE_ZIP_ZLIB) {
         unsigned long xdstlen_ul = xdstlen;
         if (compress (xdst, &xdstlen_ul,
-                xsrc, (unsigned long) xsrclen) != Z_OK)
+                xsrc, (unsigned long) xsrclen) != Z_OK) {
+            errno = EIO;
             return -1;
+        }
         xdstlen = xdstlen_ul;
     }
 #endif /* HAVE_PKG_ZLIB */
@@ -205,9 +209,11 @@ zip_decompress_block (munge_zip_t type,
     }
     n = zip_decompress_length (type, src, srclen);
     if (n < 0) {
+        /* errno already set */
         return -1;
     }
     if (*pdstlen < n) {
+        errno = EMSGSIZE;
         return -1;
     }
     xdst = dst;
@@ -218,8 +224,10 @@ zip_decompress_block (munge_zip_t type,
 #if HAVE_PKG_BZLIB
     if (type == MUNGE_ZIP_BZLIB) {
         if (BZ2_bzBuffToBuffDecompress ((char *) xdst, &xdstlen,
-                (char *) xsrc, xsrclen, 0, 0) != BZ_OK)
+                (char *) xsrc, xsrclen, 0, 0) != BZ_OK) {
+            errno = EIO;
             return -1;
+        }
     }
 #endif /* HAVE_PKG_BZLIB */
 
@@ -232,8 +240,10 @@ zip_decompress_block (munge_zip_t type,
     if (type == MUNGE_ZIP_ZLIB) {
         unsigned long xdstlen_ul = xdstlen;
         if (uncompress (xdst, &xdstlen_ul,
-                xsrc, (unsigned long) xsrclen) != Z_OK)
+                xsrc, (unsigned long) xsrclen) != Z_OK) {
+            errno = EIO;
             return -1;
+        }
         xdstlen = xdstlen_ul;
     }
 #endif /* HAVE_PKG_ZLIB */
@@ -301,6 +311,7 @@ zip_decompress_length (munge_zip_t type, const void *src, int len)
     }
     pmeta = (void *) src;
     if (ntohl (pmeta->magic) != ZIP_MAGIC) {
+        errno = EBADMSG;
         return -1;
     }
     return (int) ntohl (pmeta->length);
