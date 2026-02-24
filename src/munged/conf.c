@@ -169,7 +169,7 @@ create_conf (void)
     conf->got_syslog = 0;
     conf->got_verbose = 0;
     conf->def_cipher = MUNGE_DEFAULT_CIPHER;
-    conf->def_zip = zip_select_default_type (MUNGE_DEFAULT_ZIP);
+    conf->def_zip = MUNGE_ZIP_NONE;
     conf->def_mac = MUNGE_DEFAULT_MAC;
     conf->def_ttl = MUNGE_DEFAULT_TTL;
     conf->max_ttl = MUNGE_MAXIMUM_TTL;
