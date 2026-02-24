@@ -140,21 +140,23 @@ zip_compress_block (munge_zip_t type,
     xsrc = (unsigned char *) src;
     xsrclen = srclen;
 
+    if (xsrclen == 0) {
+        xdstlen = 0;
+    }
 #if HAVE_PKG_BZLIB
-    if (type == MUNGE_ZIP_BZLIB) {
+    else if (type == MUNGE_ZIP_BZLIB) {
         if (BZ2_bzBuffToBuffCompress ((char *) xdst, &xdstlen,
                 (char *) xsrc, xsrclen, 9, 0, 0) != BZ_OK)
             return -1;
     }
 #endif /* HAVE_PKG_BZLIB */
-
 #if HAVE_PKG_ZLIB
     /*
      *  XXX: The use of the "xdstlen_ul" temporary variable is to avoid the
      *       gcc3.3 compiler warning: "dereferencing type-punned pointer
      *       will break strict-aliasing rules".  A mere cast doesn't suffice.
      */
-    if (type == MUNGE_ZIP_ZLIB) {
+    else if (type == MUNGE_ZIP_ZLIB) {
         unsigned long xdstlen_ul = xdstlen;
         if (compress (xdst, &xdstlen_ul,
                 xsrc, (unsigned long) xsrclen) != Z_OK)
@@ -162,7 +164,11 @@ zip_compress_block (munge_zip_t type,
         xdstlen = xdstlen_ul;
     }
 #endif /* HAVE_PKG_ZLIB */
-
+    else {
+        /* failsafe since zip_validate_type() is checked above */
+        errno = EINVAL;
+        return -1;
+    }
     *pdstlen = xdstlen + sizeof (zip_meta_t);
     pmeta = dst;
     pmeta->magic = htonl (ZIP_MAGIC);
@@ -256,6 +262,9 @@ zip_compress_length (munge_zip_t type, const void *src, int len)
     if (!src || len < 0) {
         errno = EINVAL;
         return -1;
+    }
+    if (len == 0) {
+        return sizeof (zip_meta_t);
     }
 #if HAVE_PKG_BZLIB
     if (type == MUNGE_ZIP_BZLIB)
