@@ -67,34 +67,45 @@ validate (const char *dst, const void *src, int srclen)
     int n;
     char buf[9];
 
-    if (encode_block (buf, &n, src, srclen) < 0)
+    if (encode_block (buf, &n, src, srclen) < 0) {
         return -1;
-    if (n != strlen (dst))
+    }
+    if (n != strlen (dst)) {
         return -1;
-    if (strncmp (dst, buf, n))
+    }
+    if (strncmp (dst, buf, n)) {
         return -1;
+    }
 
-    if (decode_block (buf, &n, dst, strlen (dst)) < 0)
+    if (decode_block (buf, &n, dst, strlen (dst)) < 0) {
         return -1;
-    if (n != srclen)
+    }
+    if (n != srclen) {
         return -1;
-    if (strncmp (src, buf, n))
+    }
+    if (strncmp (src, buf, n)) {
         return -1;
+    }
 
-    if (encode_context (buf, &n, src, srclen) < 0)
+    if (encode_context (buf, &n, src, srclen) < 0) {
         return -1;
-    if (n != strlen (dst))
+    }
+    if (n != strlen (dst)) {
         return -1;
-    if (strncmp (dst, buf, n))
+    }
+    if (strncmp (dst, buf, n)) {
         return -1;
+    }
 
-    if (decode_context (buf, &n, dst, strlen (dst)) < 0)
+    if (decode_context (buf, &n, dst, strlen (dst)) < 0) {
         return -1;
-    if (n != srclen)
+    }
+    if (n != srclen) {
         return -1;
-    if (strncmp (src, buf, n))
+    }
+    if (strncmp (src, buf, n)) {
         return -1;
-
+    }
     return 0;
 }
 
@@ -113,18 +124,22 @@ encode_context (char *dst, int *dstlen, const void *src, int srclen)
     int m;
     const unsigned char *p = src;
 
-    if (base64_init (&x) < 0)
+    if (base64_init (&x) < 0) {
         return -1;
+    }
     for (i = 0, n = 0; i < srclen; i++) {
-        if (base64_encode_update (&x, dst, &m, p + i, 1) < 0)
+        if (base64_encode_update (&x, dst, &m, p + i, 1) < 0) {
             return -1;
+        }
         dst += m;
         n += m;
     }
-    if (base64_encode_final (&x, dst, &m) < 0)
+    if (base64_encode_final (&x, dst, &m) < 0) {
         return -1;
-    if (base64_cleanup (&x) < 0)
+    }
+    if (base64_cleanup (&x) < 0) {
         return -1;
+    }
     n += m;
     *dstlen = n;
     return 0;
@@ -145,18 +160,22 @@ decode_context (char *dst, int *dstlen, const void *src, int srclen)
     int m;
     const unsigned char *p = src;
 
-    if (base64_init (&x) < 0)
+    if (base64_init (&x) < 0) {
         return -1;
+    }
     for (i = 0, n = 0; i < srclen; i++) {
-        if (base64_decode_update (&x, dst, &m, p + i, 1) < 0)
+        if (base64_decode_update (&x, dst, &m, p + i, 1) < 0) {
             return -1;
+        }
         dst += m;
         n += m;
     }
-    if (base64_decode_final (&x, dst, &m) < 0)
+    if (base64_decode_final (&x, dst, &m) < 0) {
         return -1;
-    if (base64_cleanup (&x) < 0)
+    }
+    if (base64_cleanup (&x) < 0) {
         return -1;
+    }
     n += m;
     *dstlen = n;
     return 0;
