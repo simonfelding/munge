@@ -43,11 +43,11 @@
 
 int zip_validate_type (munge_zip_t type);
 
-int zip_compress_block (munge_zip_t type,
-    void *dst, int *pdstlen, const void *src, int srclen);
+int zip_compress_block (munge_zip_t type, void *dst, int *dstlen,
+        const void *src, int srclen);
 
-int zip_decompress_block (munge_zip_t type,
-    void *dst, int *pdstlen, const void *src, int srclen);
+int zip_decompress_block (munge_zip_t type, void *dst, int *dstlen,
+        const void *src, int srclen);
 
 int zip_compress_length (munge_zip_t type, const void *src, int len);
 

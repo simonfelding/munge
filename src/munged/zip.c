@@ -67,7 +67,7 @@
  *  Constants
  *****************************************************************************/
 
-#define ZIP_MAGIC                       0xCACACACA
+#define ZIP_MAGIC 0xCACACACA
 
 
 /*****************************************************************************
@@ -120,10 +120,10 @@ zip_compress_block (munge_zip_t type,
                     void *vdst, int *idstlen, const void *vsrc, int isrclen)
 {
     unsigned char *dst;
-    unsigned long  dstlen;
+    unsigned long dstlen;
     unsigned char *src;
-    unsigned long  srclen;
-    zip_meta_t    *meta;
+    unsigned long srclen;
+    zip_meta_t *meta;
 
     if (zip_validate_type (type) < 0) {
         errno = EINVAL;
@@ -194,10 +194,10 @@ zip_decompress_block (munge_zip_t type,
                       void *vdst, int *idstlen, const void *vsrc, int isrclen)
 {
     unsigned char *dst;
-    unsigned long  dstlen;
+    unsigned long dstlen;
     unsigned char *src;
-    unsigned long  srclen;
-    int            n;
+    unsigned long srclen;
+    int n;
 
     if (zip_validate_type (type) < 0) {
         errno = EINVAL;
@@ -310,8 +310,8 @@ zip_compress_length (munge_zip_t type, const void *src, int len)
 int
 zip_decompress_length (munge_zip_t type, const void *src, int len)
 {
-    zip_meta_t    *meta;
-    uint32_t       orig_len;
+    zip_meta_t *meta;
+    uint32_t orig_len;
 
     if (!src) {
         errno = EINVAL;
