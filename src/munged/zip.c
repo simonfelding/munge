@@ -1,4 +1,4 @@
-/*****************************************************************************
+/******************************************************************************
  *  Copyright (C) 2007-2026 Lawrence Livermore National Security, LLC.
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  UCRL-CODE-155910.
@@ -24,7 +24,6 @@
  *  <https://www.gnu.org/licenses/>.
  *****************************************************************************/
 
-
 #if HAVE_CONFIG_H
 #  include <config.h>
 #endif /* HAVE_CONFIG_H */
@@ -48,11 +47,9 @@
 #include "common.h"
 #include "zip.h"
 
-
-/*****************************************************************************
+/**
  *  Notes
- *****************************************************************************/
-/*
+ *
  *  Neither zlib nor bzlib encode the original uncompressed data length in
  *  their compressed output.
  *
@@ -62,27 +59,12 @@
  *  - Bytes 4-7: original uncompressed data length (big endian)
  */
 
-
-/*****************************************************************************
- *  Constants
- *****************************************************************************/
-
 #define ZIP_MAGIC 0xCACACACA
-
-
-/*****************************************************************************
- *  Data Types
- *****************************************************************************/
 
 typedef struct {
     uint32_t magic;
     uint32_t length;
 } zip_meta_t;
-
-
-/*****************************************************************************
- *  Public Functions
- *****************************************************************************/
 
 /**
  *  Validate the compression type.
@@ -106,7 +88,6 @@ zip_validate_type (munge_zip_t type)
     errno = EINVAL;
     return -1;
 }
-
 
 /**
  *  Compress data in a single pass using the specified compression method.
@@ -181,7 +162,6 @@ zip_compress_block (munge_zip_t type,
     return 0;
 }
 
-
 /**
  *  Decompress data in a single pass using the specified compression method.
  *  The [vsrc] buffer of [isrclen] bytes is decompressed into [vdst].
@@ -251,7 +231,6 @@ zip_decompress_block (munge_zip_t type,
     return 0;
 }
 
-
 /**
  *  Calculate the buffer size (in bytes) required for compressing [len] bytes
  *  using the specified compression method.  This is a worst-case estimate:
@@ -299,7 +278,6 @@ zip_compress_length (munge_zip_t type, const void *src, int len)
     errno = EINVAL;
     return -1;
 }
-
 
 /**
  *  Extract the decompressed (original) size from compressed data metadata.
