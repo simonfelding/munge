@@ -482,10 +482,12 @@ base64_build_table (unsigned char *data, int len)
 {
     int i;
 
-    for (i = 0; i < len; i++)
+    for (i = 0; i < len; i++) {
         data[i] = (isspace (i)) ? BASE64_IGN : BASE64_ERR;
-    for (i = strlen (bin2asc) - 1; i >= 0; i--)
+    }
+    for (i = strlen (bin2asc) - 1; i >= 0; i--) {
         data[bin2asc[i]] = i;
+    }
     data[BASE64_PAD_CHAR] = BASE64_PAD;
 }
 
@@ -501,11 +503,13 @@ base64_print_table (unsigned char *data, int len, char *name, int col)
     printf ("static const unsigned char %s[%d] = {", name, len);
 
     for (i=0, n=len-1; ; i++) {
-        if ((i % col) == 0)
+        if ((i % col) == 0) {
             printf ("\n    ");
+        }
         printf ("0x%02x", data[i]);
-        if (i == n)
+        if (i == n) {
             break;
+        }
         printf (", ");
     }
     printf ("\n};\n");
