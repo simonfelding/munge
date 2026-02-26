@@ -298,7 +298,9 @@ replay_key_f (const replay_t r)
  *  While the results of this conversion are dependent on byte sex,
  *    we can ignore it since this data is local to the node.
  */
-    return (* (unsigned int *) r->data.mac);
+    unsigned int key;
+    memcpy (&key, r->data.mac, sizeof (key));
+    return (key);
 }
 
 
