@@ -32,7 +32,6 @@
 #endif /* HAVE_CONFIG_H */
 
 #include <munge.h>
-#include "common.h"                     /* HAVE_PKG_BZLIB, HAVE_PKG_ZLIB */
 
 int zip_validate_type (munge_zip_t type);
 

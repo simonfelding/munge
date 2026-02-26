@@ -41,14 +41,6 @@
 #include "str.h"
 
 
-#if HAVE_BZLIB_H && HAVE_LIBBZ2
-#  define HAVE_PKG_BZLIB 1
-#endif
-
-#if HAVE_ZLIB_H && HAVE_LIBZ
-#  define HAVE_PKG_ZLIB 1
-#endif
-
 #ifndef MAX
 #  define MAX(a,b) ((a >= b) ? (a) : (b))
 #endif /* !MAX */

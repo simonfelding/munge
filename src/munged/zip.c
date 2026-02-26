@@ -44,7 +44,6 @@
 #include <netinet/in.h>
 #include <string.h>
 #include <munge.h>
-#include "common.h"
 #include "diag.h"
 #include "zip.h"
 
@@ -74,17 +73,17 @@ typedef struct {
 int
 zip_validate_type (munge_zip_t type)
 {
-#if HAVE_PKG_BZLIB
+#if HAVE_BZLIB_H && HAVE_LIBBZ2
     if (type == MUNGE_ZIP_BZLIB) {
         return 0;
     }
-#endif /* HAVE_PKG_BZLIB */
+#endif /* HAVE_BZLIB_H && HAVE_LIBBZ2 */
 
-#if HAVE_PKG_ZLIB
+#if HAVE_ZLIB_H && HAVE_LIBZ
     if (type == MUNGE_ZIP_ZLIB) {
         return 0;
     }
-#endif /* HAVE_PKG_ZLIB */
+#endif /* HAVE_ZLIB_H && HAVE_LIBZ */
 
     errno = EINVAL;
     return -1;
@@ -127,7 +126,7 @@ zip_compress_block (munge_zip_t type,
     if (srclen == 0) {
         dstlen = 0;
     }
-#if HAVE_PKG_BZLIB
+#if HAVE_BZLIB_H && HAVE_LIBBZ2
     else if (type == MUNGE_ZIP_BZLIB) {
         unsigned int u = (unsigned int) dstlen;
         /*
@@ -144,15 +143,15 @@ zip_compress_block (munge_zip_t type,
         }
         dstlen = (unsigned long) u;
     }
-#endif /* HAVE_PKG_BZLIB */
-#if HAVE_PKG_ZLIB
+#endif /* HAVE_BZLIB_H && HAVE_LIBBZ2 */
+#if HAVE_ZLIB_H && HAVE_LIBZ
     else if (type == MUNGE_ZIP_ZLIB) {
         if (compress (dst, &dstlen, src, srclen) != Z_OK) {
             errno = EIO;
             return -1;
         }
     }
-#endif /* HAVE_PKG_ZLIB */
+#endif /* HAVE_ZLIB_H && HAVE_LIBZ */
     else {
         /* failsafe since zip_validate_type() is checked above */
         errno = EINVAL;
@@ -210,7 +209,7 @@ zip_decompress_block (munge_zip_t type,
     src = (const unsigned char *) vsrc + sizeof (zip_meta_t);
     srclen = (unsigned long) isrclen - sizeof (zip_meta_t);
 
-#if HAVE_PKG_BZLIB
+#if HAVE_BZLIB_H && HAVE_LIBBZ2
     if (type == MUNGE_ZIP_BZLIB) {
         unsigned int u = (unsigned int) dstlen;
         /*
@@ -227,16 +226,16 @@ zip_decompress_block (munge_zip_t type,
         }
         dstlen = (unsigned long) u;
     }
-#endif /* HAVE_PKG_BZLIB */
+#endif /* HAVE_BZLIB_H && HAVE_LIBBZ2 */
 
-#if HAVE_PKG_ZLIB
+#if HAVE_ZLIB_H && HAVE_LIBZ
     if (type == MUNGE_ZIP_ZLIB) {
         if (uncompress (dst, &dstlen, src, srclen) != Z_OK) {
             errno = EIO;
             return -1;
         }
     }
-#endif /* HAVE_PKG_ZLIB */
+#endif /* HAVE_ZLIB_H && HAVE_LIBZ */
 
     if (dstlen > INT_MAX) {
         errno = ERANGE;
@@ -268,7 +267,7 @@ zip_compress_length (munge_zip_t type, const void *src, int len)
     if (len == 0) {
         return sizeof (zip_meta_t);
     }
-#if HAVE_PKG_BZLIB
+#if HAVE_BZLIB_H && HAVE_LIBBZ2
     if (type == MUNGE_ZIP_BZLIB) {
         result = (len * 1.01) + 600 + 1 + sizeof (zip_meta_t);
         if (result > INT_MAX) {
@@ -277,9 +276,9 @@ zip_compress_length (munge_zip_t type, const void *src, int len)
         }
         return (int) result;
     }
-#endif /* HAVE_PKG_BZLIB */
+#endif /* HAVE_BZLIB_H && HAVE_LIBBZ2 */
 
-#if HAVE_PKG_ZLIB
+#if HAVE_ZLIB_H && HAVE_LIBZ
     if (type == MUNGE_ZIP_ZLIB) {
         result = (len * 1.001) + 12 + 1 + sizeof (zip_meta_t);
         if (result > INT_MAX) {
@@ -288,7 +287,7 @@ zip_compress_length (munge_zip_t type, const void *src, int len)
         }
         return (int) result;
     }
-#endif /* HAVE_PKG_ZLIB */
+#endif /* HAVE_ZLIB_H && HAVE_LIBZ */
 
     errno = EINVAL;
     return -1;
