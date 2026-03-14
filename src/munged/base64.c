@@ -120,7 +120,7 @@ base64_encode_update (base64_ctx *x, void *vdst, int *dstlen,
     int num_read;
     int num_write;
     unsigned char *dst = (unsigned char *) vdst;
-    unsigned char *src = (unsigned char *) vsrc;
+    const unsigned char *src = (const unsigned char *) vsrc;
 
     if (!x || !vdst || !dstlen || !vsrc || srclen < 0) {
         errno = EINVAL;
