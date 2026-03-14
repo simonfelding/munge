@@ -102,7 +102,7 @@ zip_compress_block (munge_zip_t type,
 {
     unsigned char *dst;
     unsigned long dstlen;
-    unsigned char *src;
+    const unsigned char *src;
     unsigned long srclen;
     zip_meta_t *meta;
 
@@ -120,7 +120,7 @@ zip_compress_block (munge_zip_t type,
     }
     dst = (unsigned char *) vdst + sizeof (zip_meta_t);
     dstlen = (unsigned long) *idstlen - sizeof (zip_meta_t);
-    src = (unsigned char *) vsrc;
+    src = (const unsigned char *) vsrc;
     srclen = (unsigned long) isrclen;
 
     if (srclen == 0) {
@@ -129,8 +129,19 @@ zip_compress_block (munge_zip_t type,
 #if HAVE_PKG_BZLIB
     else if (type == MUNGE_ZIP_BZLIB) {
         unsigned int u = (unsigned int) dstlen;
+        /*
+         *  bzlib's source parameter is incorrectly declared as non-const;
+         *  the underlying buffer is mutable and bzlib does not modify it.
+         */
+#if defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wcast-qual"
+#endif /* __GNUC__ */
         if (BZ2_bzBuffToBuffCompress ((char *) dst, &u, (char *) src,
                 (unsigned int) srclen, 9, 0, 0) != BZ_OK) {
+#if defined(__GNUC__)
+#pragma GCC diagnostic pop
+#endif /* __GNUC__ */
             errno = EIO;
             return -1;
         }
@@ -175,7 +186,7 @@ zip_decompress_block (munge_zip_t type,
 {
     unsigned char *dst;
     unsigned long dstlen;
-    unsigned char *src;
+    const unsigned char *src;
     unsigned long srclen;
     int n;
 
@@ -199,14 +210,25 @@ zip_decompress_block (munge_zip_t type,
     }
     dst = (unsigned char *) vdst;
     dstlen = (unsigned long) *idstlen;
-    src = (unsigned char *) vsrc + sizeof (zip_meta_t);
+    src = (const unsigned char *) vsrc + sizeof (zip_meta_t);
     srclen = (unsigned long) isrclen - sizeof (zip_meta_t);
 
 #if HAVE_PKG_BZLIB
     if (type == MUNGE_ZIP_BZLIB) {
         unsigned int u = (unsigned int) dstlen;
+        /*
+         *  bzlib's source parameter is incorrectly declared as non-const;
+         *  the underlying buffer is mutable and bzlib does not modify it.
+         */
+#if defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wcast-qual"
+#endif /* __GNUC__ */
         if (BZ2_bzBuffToBuffDecompress ((char *) dst, &u, (char *) src,
                 (unsigned int) srclen, 0, 0) != BZ_OK) {
+#if defined(__GNUC__)
+#pragma GCC diagnostic pop
+#endif /* __GNUC__ */
             errno = EIO;
             return -1;
         }
@@ -288,7 +310,7 @@ zip_compress_length (munge_zip_t type, const void *src, int len)
 int
 zip_decompress_length (munge_zip_t type, const void *src, int len)
 {
-    zip_meta_t *meta;
+    const zip_meta_t *meta;
     uint32_t orig_len;
 
     if (!src) {
@@ -299,7 +321,7 @@ zip_decompress_length (munge_zip_t type, const void *src, int len)
         errno = EINVAL;
         return -1;
     }
-    meta = (void *) src;
+    meta = (const zip_meta_t *) src;
     if (ntohl (meta->magic) != ZIP_MAGIC) {
         errno = EBADMSG;
         return -1;
