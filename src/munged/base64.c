@@ -31,6 +31,7 @@
 
 #include <assert.h>
 #include <errno.h>
+#include <limits.h>
 #include <string.h>
 #include "base64.h"
 
@@ -400,10 +401,21 @@ base64_decode_block (void *dst, int *dstlen, const void *src, int srclen)
 
 /*  Returns the size (in bytes) of the destination memory block required
  *    for base64 encoding a block of [srclen] bytes.
+ *  Returns -1 if srclen is invalid or would cause integer overflow.
  */
 int
 base64_encode_length (int srclen)
 {
+    const int maxlen = (((INT_MAX - 1) / 4) * 3) - 2;
+
+    if (srclen < 0) {
+        errno = EINVAL;
+        return -1;
+    }
+    if (srclen > maxlen) {
+        errno = ERANGE;
+        return -1;
+    }
 /*  When encoding, 3 bytes are encoded into 4 characters.
  *  Add 2 bytes to ensure a partial 3-byte chunk will be accounted for
  *    during integer division, then add 1 byte for the terminating null byte.
@@ -414,10 +426,24 @@ base64_encode_length (int srclen)
 
 /*  Returns the size (in bytes) of the destination memory block required
  *    for base64 decoding a block of [srclen] bytes.
+ *  Returns -1 if srclen is invalid or would cause integer overflow.
  */
 int
 base64_decode_length (int srclen)
 {
+/*  Use unsigned arithmetic to prevent constant-expression overflow on ILP32
+ *    platforms where sizeof(int) == sizeof(long).
+ */
+    const unsigned maxlen = (((unsigned) (INT_MAX - 1) / 3) * 4) - 3;
+
+    if (srclen < 0) {
+        errno = EINVAL;
+        return -1;
+    }
+    if ((unsigned) srclen > maxlen) {
+        errno = ERANGE;
+        return -1;
+    }
 /*  When decoding, 4 characters are decoded into 3 bytes.
  *  Add 3 bytes to ensure a partial 4-byte chunk will be accounted for
  *    during integer division, then add 1 byte for the terminating null byte.

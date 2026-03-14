@@ -687,10 +687,16 @@ enc_armor (munge_cred_t c)
     suffix_len = sizeof MUNGE_CRED_SUFFIX - 1;
     assert (suffix_len > 0);
 
-    /*  Allocate memory for armor'd data.
+    /*  Calculate base64 buffer size and allocate memory for armor'd data.
+     *  Check base64 length for error (< 0) or zero-length input (== 0).
      */
     n = c->outer_len + c->mac_len + c->inner_len;
-    buf_len = prefix_len + base64_encode_length (n) + suffix_len;
+    buf_len = base64_encode_length (n);
+    if (buf_len <= 0) {
+        return (m_msg_set_err (m, EMUNGE_SNAFU,
+            strdupf ("Invalid base64-encode data length %d", n)));
+    }
+    buf_len += prefix_len + suffix_len;
 
     if (!(buf = malloc (buf_len))) {
         return (m_msg_set_err (m, EMUNGE_NO_MEMORY, NULL));
