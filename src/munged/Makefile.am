@@ -101,6 +101,7 @@ munged_SOURCES = \
 	zip.h \
 	$(top_srcdir)/src/common/crypto.c \
 	$(top_srcdir)/src/common/crypto.h \
+	$(top_srcdir)/src/common/diag.h \
 	$(top_srcdir)/src/common/entropy.c \
 	$(top_srcdir)/src/common/entropy.h \
 	$(top_srcdir)/src/common/mac.c \

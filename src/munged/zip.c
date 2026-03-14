@@ -45,6 +45,7 @@
 #include <string.h>
 #include <munge.h>
 #include "common.h"
+#include "diag.h"
 #include "zip.h"
 
 /**
@@ -133,15 +134,11 @@ zip_compress_block (munge_zip_t type,
          *  bzlib's source parameter is incorrectly declared as non-const;
          *  the underlying buffer is mutable and bzlib does not modify it.
          */
-#if defined(__GNUC__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wcast-qual"
-#endif /* __GNUC__ */
+        DIAG_PUSH
+        DIAG_OFF ("-Wcast-qual")
         if (BZ2_bzBuffToBuffCompress ((char *) dst, &u, (char *) src,
                 (unsigned int) srclen, 9, 0, 0) != BZ_OK) {
-#if defined(__GNUC__)
-#pragma GCC diagnostic pop
-#endif /* __GNUC__ */
+        DIAG_POP
             errno = EIO;
             return -1;
         }
@@ -220,15 +217,11 @@ zip_decompress_block (munge_zip_t type,
          *  bzlib's source parameter is incorrectly declared as non-const;
          *  the underlying buffer is mutable and bzlib does not modify it.
          */
-#if defined(__GNUC__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wcast-qual"
-#endif /* __GNUC__ */
+        DIAG_PUSH
+        DIAG_OFF ("-Wcast-qual")
         if (BZ2_bzBuffToBuffDecompress ((char *) dst, &u, (char *) src,
                 (unsigned int) srclen, 0, 0) != BZ_OK) {
-#if defined(__GNUC__)
-#pragma GCC diagnostic pop
-#endif /* __GNUC__ */
+        DIAG_POP
             errno = EIO;
             return -1;
         }
