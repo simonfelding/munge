@@ -752,7 +752,7 @@ enc_armor (munge_cred_t c)
     return (0);
 
 err_cleanup:
-    base64_cleanup (&x);
+    (void) base64_cleanup (&x);
 err:
     memset (buf, 0, buf_len);
     free (buf);

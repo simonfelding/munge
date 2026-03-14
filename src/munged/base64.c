@@ -30,6 +30,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include <assert.h>
+#include <errno.h>
 #include <string.h>
 #include "base64.h"
 
@@ -107,8 +108,10 @@ static const unsigned char asc2bin[256] = {
 int
 base64_init (base64_ctx *x)
 {
-    assert (x != NULL);
-
+    if (!x) {
+        errno = EINVAL;
+        return -1;
+    }
     x->num = 0;
     x->pad = 0;
     assert ((x->magic = BASE64_MAGIC));
@@ -132,18 +135,18 @@ base64_encode_update (base64_ctx *x, void *vdst, int *dstlen,
     unsigned char *dst = (unsigned char *) vdst;
     unsigned char *src = (unsigned char *) vsrc;
 
-    assert (x != NULL);
+    if (!x || !vdst || !dstlen || !vsrc || srclen < 0) {
+        errno = EINVAL;
+        return -1;
+    }
+    if (srclen == 0) {
+        return 0;
+    }
     assert (x->magic == BASE64_MAGIC);
     assert (x->finalized != 1);
-    assert (dst != NULL);
-    assert (dstlen != NULL);
-    assert (src != NULL);
 
     num_write = 0;
 
-    if (srclen <= 0) {
-        return 0;
-    }
     /*  Encode leftover data if context buffer can be filled.
      */
     if ((x->num > 0) && (srclen >= (num_read = 3 - x->num))) {
@@ -185,11 +188,12 @@ base64_encode_update (base64_ctx *x, void *vdst, int *dstlen,
 int
 base64_encode_final (base64_ctx *x, void *dst, int *dstlen)
 {
-    assert (x != NULL);
+    if (!x || !dst || !dstlen) {
+        errno = EINVAL;
+        return -1;
+    }
     assert (x->magic == BASE64_MAGIC);
     assert (x->finalized != 1);
-    assert (dst != NULL);
-    assert (dstlen != NULL);
 
     /*  Encode leftover data from the previous update().
      */
@@ -209,13 +213,13 @@ base64_encode_final (base64_ctx *x, void *dst, int *dstlen)
  *    into [dst], and setting [dstlen] to the number of bytes written.
  *  This can be called multiple times to process successive blocks of data.
  *  Returns 0 on success, or -1 on error.
+ *
+ *  Note: Context [x] should only be NULL when called via base64_decode_block().
  */
 int
 base64_decode_update (base64_ctx *x, void *dst, int *dstlen,
                       const void *src, int srclen)
 {
-/*  Context [x] should only be NULL when called via base64_decode_block().
- */
     int i = 0;
     int err = 0;
     int pad = 0;
@@ -224,12 +228,10 @@ base64_decode_update (base64_ctx *x, void *dst, int *dstlen,
     const unsigned char *psrc_last;
     unsigned char c;
 
-    assert ((x == NULL) || (x->magic == BASE64_MAGIC));
-    assert ((x == NULL) || (x->finalized != 1));
-    assert (dst != NULL);
-    assert (dstlen != NULL);
-    assert (src != NULL);
-
+    if (!dst || !dstlen || !src || srclen < 0) {
+        errno = EINVAL;
+        return -1;
+    }
     pdst = dst;
     psrc = src;
     psrc_last = psrc + srclen;
@@ -237,6 +239,8 @@ base64_decode_update (base64_ctx *x, void *dst, int *dstlen,
     /*  Restore context.
      */
     if (x != NULL) {
+        assert (x->magic == BASE64_MAGIC);
+        assert (x->finalized != 1);
         i = x->num;
         pad = x->pad;
         *pdst = x->buf[0];
@@ -302,7 +306,10 @@ base64_decode_final (base64_ctx *x, void *dst, int *dstlen)
 {
     int rc = 0;
 
-    assert (x != NULL);
+    if (!x || !dst || !dstlen) {
+        errno = EINVAL;
+        return -1;
+    }
     assert (x->magic == BASE64_MAGIC);
     assert (x->finalized != 1);
 
@@ -321,7 +328,10 @@ base64_decode_final (base64_ctx *x, void *dst, int *dstlen)
 int
 base64_cleanup (base64_ctx *x)
 {
-    assert (x != NULL);
+    if (!x) {
+        errno = EINVAL;
+        return -1;
+    }
     assert (x->magic == BASE64_MAGIC);
 
     memset (x, 0, sizeof *x);
@@ -341,6 +351,10 @@ base64_encode_block (void *dst, int *dstlen, const void *src, int srclen)
     const unsigned char *psrc;
     int n;
 
+    if (!dst || !dstlen || !src || srclen < 0) {
+        errno = EINVAL;
+        return -1;
+    }
     pdst = dst;
     psrc = src;
     n = 0;
