@@ -51,7 +51,6 @@
  *  This custom implementation provides consistent, predictable behavior.
  */
 
-#define BASE64_MAGIC    0xDEADBEEF
 #define BASE64_ERR      0xFF
 #define BASE64_IGN      0xFE
 #define BASE64_PAD      0xFD
@@ -99,7 +98,6 @@ base64_init (base64_ctx *x)
     }
     x->num = 0;
     x->pad = 0;
-    assert ((x->magic = BASE64_MAGIC));
     assert (!(x->finalized = 0));
     return 0;
 }
@@ -129,7 +127,6 @@ base64_encode_update (base64_ctx *x, void *vdst, int *dstlen,
     if (srclen == 0) {
         return 0;
     }
-    assert (x->magic == BASE64_MAGIC);
     assert (x->finalized != 1);
 
     num_write = 0;
@@ -179,7 +176,6 @@ base64_encode_final (base64_ctx *x, void *dst, int *dstlen)
         errno = EINVAL;
         return -1;
     }
-    assert (x->magic == BASE64_MAGIC);
     assert (x->finalized != 1);
 
     /*  Encode leftover data from the previous update().
@@ -228,7 +224,6 @@ base64_decode_update (base64_ctx *x, void *dst, int *dstlen,
     /*  Restore context.
      */
     if (x != NULL) {
-        assert (x->magic == BASE64_MAGIC);
         assert (x->finalized != 1);
         i = x->num;
         pad = x->pad;
@@ -303,7 +298,6 @@ base64_decode_final (base64_ctx *x, void *dst, int *dstlen)
         errno = EINVAL;
         return -1;
     }
-    assert (x->magic == BASE64_MAGIC);
     assert (x->finalized != 1);
 
     if (((x->num + x->pad) % 4) != 0) {
@@ -327,10 +321,7 @@ base64_cleanup (base64_ctx *x)
         errno = EINVAL;
         return -1;
     }
-    assert (x->magic == BASE64_MAGIC);
-
     memset (x, 0, sizeof *x);
-    assert ((x->magic = ~BASE64_MAGIC));
     return 0;
 }
 

@@ -36,7 +36,6 @@ typedef struct {
     int num;
     int pad;
 #ifndef NDEBUG
-    int magic;
     int finalized;
 #endif /* !NDEBUG */
 } base64_ctx;
