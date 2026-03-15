@@ -114,7 +114,7 @@ zip_compress_block (munge_zip_t type,
         errno = EINVAL;
         return -1;
     }
-    if (*idstlen < sizeof (zip_meta_t)) {
+    if ((size_t) *idstlen < sizeof (zip_meta_t)) {
         errno = EMSGSIZE;
         return -1;
     }
@@ -184,7 +184,7 @@ zip_decompress_block (munge_zip_t type,
         return -1;
     }
     if (!vdst || !idstlen || *idstlen < 0 || !vsrc \
-            || isrclen < sizeof (zip_meta_t)) {
+            || isrclen < 0 || (size_t) isrclen < sizeof (zip_meta_t)) {
         errno = EINVAL;
         return -1;
     }
@@ -295,7 +295,7 @@ zip_decompress_length (munge_zip_t type, const void *src, int len)
         errno = EINVAL;
         return -1;
     }
-    if (len < sizeof (zip_meta_t)) {
+    if (len < 0 || (size_t) len < sizeof (zip_meta_t)) {
         errno = EINVAL;
         return -1;
     }
