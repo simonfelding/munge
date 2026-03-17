@@ -106,7 +106,7 @@ create_conf (void)
 {
     conf_t *confp;
 
-    confp = calloc (sizeof (struct conf), 1);
+    confp = calloc (1, sizeof (struct conf));
     if (confp == NULL) {
         log_errno (EMUNGE_NO_MEMORY, LOG_ERR,
                 "Failed to allocate conf struct");
