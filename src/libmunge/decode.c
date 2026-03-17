@@ -82,15 +82,20 @@ munge_decode (const char *cred, munge_ctx_t ctx,
     }
     /*  Ask the daemon to decode a credential.
      */
-    if ((e = m_msg_create (&m)) != EMUNGE_SUCCESS)
+    if ((e = m_msg_create (&m)) != EMUNGE_SUCCESS) {
         ;
-    else if ((e = _decode_req (m, ctx, cred)) != EMUNGE_SUCCESS)
+    }
+    else if ((e = _decode_req (m, ctx, cred)) != EMUNGE_SUCCESS) {
         ;
+    }
     else if ((e = m_msg_client_xfer (&m, MUNGE_MSG_DEC_REQ, ctx))
-            != EMUNGE_SUCCESS)
+            != EMUNGE_SUCCESS) {
         ;
-    else if ((e = _decode_rsp (m, ctx, buf, len, uid, gid)) != EMUNGE_SUCCESS)
+    }
+    else if ((e = _decode_rsp (m, ctx, buf, len, uid, gid))
+            != EMUNGE_SUCCESS) {
         ;
+    }
     /*  Clean up and return.
      */
     if (ctx) {

@@ -76,15 +76,19 @@ munge_encode (char **cred, munge_ctx_t ctx, const void *buf, int len)
     }
     /*  Ask the daemon to encode a credential.
      */
-    if ((e = m_msg_create (&m)) != EMUNGE_SUCCESS)
+    if ((e = m_msg_create (&m)) != EMUNGE_SUCCESS) {
         ;
-    else if ((e = _encode_req (m, ctx, buf, len)) != EMUNGE_SUCCESS)
+    }
+    else if ((e = _encode_req (m, ctx, buf, len)) != EMUNGE_SUCCESS) {
         ;
+    }
     else if ((e = m_msg_client_xfer (&m, MUNGE_MSG_ENC_REQ, ctx))
-            != EMUNGE_SUCCESS)
+            != EMUNGE_SUCCESS) {
         ;
-    else if ((e = _encode_rsp (m, cred)) != EMUNGE_SUCCESS)
+    }
+    else if ((e = _encode_rsp (m, cred)) != EMUNGE_SUCCESS) {
         ;
+    }
     /*  Clean up and return.
      */
     if (ctx) {
