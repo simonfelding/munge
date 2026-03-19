@@ -70,12 +70,6 @@
 #  define MUNGE_DEFAULT_MAC             MUNGE_MAC_SHA256
 #endif /* !HAVE_OPENSSL || HAVE_EVP_SHA256 */
 
-/*  Default munge_zip_t for compressing credentials.
- *    Compression incurs a substantial performance penalty.
- *    Typical payloads are too small to achieve any compression.
- */
-#define MUNGE_DEFAULT_ZIP               MUNGE_ZIP_NONE
-
 /*  Integer for the default number of seconds before a credential expires.
  */
 #define MUNGE_DEFAULT_TTL               300

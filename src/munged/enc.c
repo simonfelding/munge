@@ -175,7 +175,7 @@ enc_validate_msg (m_msg_t m)
     else if (m->zip == MUNGE_ZIP_NONE) {
         ; /* disable compression */
     }
-    else if (!zip_is_valid_type (m->zip)) {
+    else if (zip_validate_type (m->zip) < 0) {
         return (m_msg_set_err (m, EMUNGE_BAD_ZIP,
             strdupf ("Invalid compression type %d", m->zip)));
     }

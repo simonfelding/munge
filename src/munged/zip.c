@@ -1,4 +1,4 @@
-/*****************************************************************************
+/******************************************************************************
  *  Copyright (C) 2007-2026 Lawrence Livermore National Security, LLC.
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  UCRL-CODE-155910.
@@ -24,7 +24,6 @@
  *  <https://www.gnu.org/licenses/>.
  *****************************************************************************/
 
-
 #if HAVE_CONFIG_H
 #  include <config.h>
 #endif /* HAVE_CONFIG_H */
@@ -39,291 +38,290 @@
 #endif /* HAVE_ZLIB_H */
 
 #include <assert.h>
+#include <errno.h>
 #include <inttypes.h>
+#include <limits.h>
 #include <netinet/in.h>
 #include <string.h>
 #include <munge.h>
-#include "common.h"
+#include "diag.h"
 #include "zip.h"
 
-
-/*****************************************************************************
+/**
  *  Notes
- *****************************************************************************/
-/*
- *  Neither the zlib nor bzlib compression routines encode the original length
- *    of the uncompressed data in the compressed output.
- *  The following "zip" routines allocate an additional 8 bytes of metadata
- *    (zip_meta_t) that is prepended to the compressed output for this purpose.
- *    The first 4 bytes contain a sentinel to check if the metadata is valid.
- *    The next 4 bytes contain the original length of the uncompressed data.
- *    Both values are in MSBF (ie, big endian) format.
+ *
+ *  Neither zlib nor bzlib encode the original uncompressed data length in
+ *  their compressed output.
+ *
+ *  The compression functions prepend 8 bytes of metadata (zip_meta_t) to the
+ *  compressed output for this purpose:
+ *  - Bytes 0-3: sentinel value to validate metadata (big endian)
+ *  - Bytes 4-7: original uncompressed data length (big endian)
  */
 
-
-/*****************************************************************************
- *  Constants
- *****************************************************************************/
-
-#define ZIP_MAGIC                       0xCACACACA
-
-
-/*****************************************************************************
- *  Data Types
- *****************************************************************************/
+#define ZIP_MAGIC 0xCACACACA
 
 typedef struct {
     uint32_t magic;
     uint32_t length;
 } zip_meta_t;
 
-
-/*****************************************************************************
- *  Public Functions
- *****************************************************************************/
-
-/*  Returns non-zero if the given [type] is a supported valid MUNGE compression
- *    type according to the current configuration.  The NONE and DEFAULT types
- *    are not considered valid types by this routine.
+/**
+ *  Validate the compression type.
+ *  Return 0 if valid, or -1 if invalid (with errno set).
  */
 int
-zip_is_valid_type (munge_zip_t type)
+zip_validate_type (munge_zip_t type)
 {
-#if HAVE_PKG_BZLIB
-    if (type == MUNGE_ZIP_BZLIB)
-        return (1);
-#endif /* HAVE_PKG_BZLIB */
+#if HAVE_BZLIB_H && HAVE_LIBBZ2
+    if (type == MUNGE_ZIP_BZLIB) {
+        return 0;
+    }
+#endif /* HAVE_BZLIB_H && HAVE_LIBBZ2 */
 
-#if HAVE_PKG_ZLIB
-    if (type == MUNGE_ZIP_ZLIB)
-        return (1);
-#endif /* HAVE_PKG_ZLIB */
+#if HAVE_ZLIB_H && HAVE_LIBZ
+    if (type == MUNGE_ZIP_ZLIB) {
+        return 0;
+    }
+#endif /* HAVE_ZLIB_H && HAVE_LIBZ */
 
-    return (0);
+    errno = EINVAL;
+    return -1;
 }
 
-
-/*  Compresses the [src] buffer of length [srclen] in a single pass using the
- *    compression method [type].  The resulting compressed output is stored
- *    in the [dst] buffer.
- *  Upon entry, [*pdstlen] must be set to the size of the [dst] buffer.
- *  Upon exit, [*pdstlen] is set to the size of the compressed data.
- *  Returns 0 on success, or -1 or error.
+/**
+ *  Compress data in a single pass using the specified compression method.
+ *  The [vsrc] buffer of [isrclen] bytes is compressed into [vdst].
+ *  On entry, [*idstlen] must contain the size of [vdst].
+ *  On exit, [*idstlen] contains the size of compressed data.
+ *  Return 0 on success, or -1 on error (with errno set).
  */
 int
 zip_compress_block (munge_zip_t type,
-                    void *dst, int *pdstlen, const void *src, int srclen)
+                    void *vdst, int *idstlen, const void *vsrc, int isrclen)
 {
-    unsigned char *xdst;
-    unsigned int   xdstlen;
-    unsigned char *xsrc;
-    unsigned int   xsrclen;
-    zip_meta_t    *pmeta;
+    unsigned char *dst;
+    unsigned long dstlen;
+    const unsigned char *src;
+    unsigned long srclen;
+    zip_meta_t *meta;
 
-    assert (dst != NULL);
-    assert (pdstlen != NULL);
-    assert (src != NULL);
+    if (zip_validate_type (type) < 0) {
+        errno = EINVAL;
+        return -1;
+    }
+    if (!vdst || !idstlen || *idstlen < 0 || !vsrc || isrclen < 0) {
+        errno = EINVAL;
+        return -1;
+    }
+    if ((size_t) *idstlen < sizeof (zip_meta_t)) {
+        errno = EMSGSIZE;
+        return -1;
+    }
+    dst = (unsigned char *) vdst + sizeof (zip_meta_t);
+    dstlen = (unsigned long) *idstlen - sizeof (zip_meta_t);
+    src = (const unsigned char *) vsrc;
+    srclen = (unsigned long) isrclen;
 
-    if (!zip_is_valid_type (type)) {
-        return (-1);
+    if (srclen == 0) {
+        dstlen = 0;
     }
-    if (*pdstlen < sizeof (zip_meta_t)) {
-        return (-1);
+#if HAVE_BZLIB_H && HAVE_LIBBZ2
+    else if (type == MUNGE_ZIP_BZLIB) {
+        unsigned int u = (unsigned int) dstlen;
+        /*
+         *  bzlib's source parameter is incorrectly declared as non-const;
+         *  the underlying buffer is mutable and bzlib does not modify it.
+         */
+        DIAG_PUSH
+        DIAG_OFF ("-Wcast-qual")
+        if (BZ2_bzBuffToBuffCompress ((char *) dst, &u, (char *) src,
+                (unsigned int) srclen, 9, 0, 0) != BZ_OK) {
+        DIAG_POP
+            errno = EIO;
+            return -1;
+        }
+        dstlen = (unsigned long) u;
     }
-    if (srclen <= 0) {
-        return (-1);
+#endif /* HAVE_BZLIB_H && HAVE_LIBBZ2 */
+#if HAVE_ZLIB_H && HAVE_LIBZ
+    else if (type == MUNGE_ZIP_ZLIB) {
+        if (compress (dst, &dstlen, src, srclen) != Z_OK) {
+            errno = EIO;
+            return -1;
+        }
     }
-    xdst = (unsigned char *) dst + sizeof (zip_meta_t);
-    xdstlen = *pdstlen - sizeof (zip_meta_t);
-    xsrc = (unsigned char *) src;
-    xsrclen = srclen;
-
-#if HAVE_PKG_BZLIB
-    if (type == MUNGE_ZIP_BZLIB) {
-        if (BZ2_bzBuffToBuffCompress ((char *) xdst, &xdstlen,
-                (char *) xsrc, xsrclen, 9, 0, 0) != BZ_OK)
-            return (-1);
+#endif /* HAVE_ZLIB_H && HAVE_LIBZ */
+    else {
+        /* failsafe since zip_validate_type() is checked above */
+        errno = EINVAL;
+        return -1;
     }
-#endif /* HAVE_PKG_BZLIB */
-
-#if HAVE_PKG_ZLIB
-    /*
-     *  XXX: The use of the "xdstlen_ul" temporary variable is to avoid the
-     *       gcc3.3 compiler warning: "dereferencing type-punned pointer
-     *       will break strict-aliasing rules".  A mere cast doesn't suffice.
-     */
-    if (type == MUNGE_ZIP_ZLIB) {
-        unsigned long xdstlen_ul = xdstlen;
-        if (compress (xdst, &xdstlen_ul,
-                xsrc, (unsigned long) xsrclen) != Z_OK)
-            return (-1);
-        xdstlen = xdstlen_ul;
+    dstlen += sizeof (zip_meta_t);
+    if (dstlen > INT_MAX) {
+        errno = ERANGE;
+        return -1;
     }
-#endif /* HAVE_PKG_ZLIB */
-
-    *pdstlen = xdstlen + sizeof (zip_meta_t);
-    pmeta = dst;
-    pmeta->magic = htonl (ZIP_MAGIC);
-    pmeta->length = htonl (xsrclen);
-    return (0);
+    *idstlen = (int) dstlen;
+    meta = (zip_meta_t *) vdst;
+    meta->magic = htonl (ZIP_MAGIC);
+    meta->length = htonl (srclen);
+    return 0;
 }
 
-
-/*  Decompresses the [src] buffer of length [srclen] in a single pass using the
- *    compression method [type].  The resulting decompressed (original) output
- *    is stored in the [dst] buffer.
- *  Upon entry, [*pdstlen] must be set to the size of the [dst] buffer.
- *  Upon exit, [*pdstlen] is set to the size of the decompressed data.
- *  Returns 0 on success, or -1 or error.
+/**
+ *  Decompress data in a single pass using the specified compression method.
+ *  The [vsrc] buffer of [isrclen] bytes is decompressed into [vdst].
+ *  On entry, [*idstlen] must contain the size of [vdst].
+ *  On exit, [*idstlen] contains the size of decompressed data.
+ *  Return 0 on success, or -1 on error (with errno set).
  */
 int
 zip_decompress_block (munge_zip_t type,
-                      void *dst, int *pdstlen, const void *src, int srclen)
+                      void *vdst, int *idstlen, const void *vsrc, int isrclen)
 {
-    unsigned char *xdst;
-    unsigned int   xdstlen;
-    unsigned char *xsrc;
-    unsigned int   xsrclen;
-    int            n;
+    unsigned char *dst;
+    unsigned long dstlen;
+    const unsigned char *src;
+    unsigned long srclen;
+    int n;
 
-    assert (dst != NULL);
-    assert (pdstlen != NULL);
-    assert (src != NULL);
-
-    if (!zip_is_valid_type (type)) {
-        return (-1);
+    if (zip_validate_type (type) < 0) {
+        errno = EINVAL;
+        return -1;
     }
-    n = zip_decompress_length (type, src, srclen);
+    if (!vdst || !idstlen || *idstlen < 0 || !vsrc \
+            || isrclen < 0 || (size_t) isrclen < sizeof (zip_meta_t)) {
+        errno = EINVAL;
+        return -1;
+    }
+    n = zip_decompress_length (type, vsrc, isrclen);
     if (n < 0) {
-        return (-1);
+        /* errno already set */
+        return -1;
     }
-    if (*pdstlen < n) {
-        return (-1);
+    if (*idstlen < n) {
+        errno = EMSGSIZE;
+        return -1;
     }
-    if (srclen <= 0) {
-        return (-1);
-    }
-    xdst = dst;
-    xdstlen = *pdstlen;
-    xsrc = (unsigned char *) src + sizeof (zip_meta_t);
-    xsrclen = srclen - sizeof (zip_meta_t);
+    dst = (unsigned char *) vdst;
+    dstlen = (unsigned long) *idstlen;
+    src = (const unsigned char *) vsrc + sizeof (zip_meta_t);
+    srclen = (unsigned long) isrclen - sizeof (zip_meta_t);
 
-#if HAVE_PKG_BZLIB
+#if HAVE_BZLIB_H && HAVE_LIBBZ2
     if (type == MUNGE_ZIP_BZLIB) {
-        if (BZ2_bzBuffToBuffDecompress ((char *) xdst, &xdstlen,
-                (char *) xsrc, xsrclen, 0, 0) != BZ_OK)
-            return (-1);
+        unsigned int u = (unsigned int) dstlen;
+        /*
+         *  bzlib's source parameter is incorrectly declared as non-const;
+         *  the underlying buffer is mutable and bzlib does not modify it.
+         */
+        DIAG_PUSH
+        DIAG_OFF ("-Wcast-qual")
+        if (BZ2_bzBuffToBuffDecompress ((char *) dst, &u, (char *) src,
+                (unsigned int) srclen, 0, 0) != BZ_OK) {
+        DIAG_POP
+            errno = EIO;
+            return -1;
+        }
+        dstlen = (unsigned long) u;
     }
-#endif /* HAVE_PKG_BZLIB */
+#endif /* HAVE_BZLIB_H && HAVE_LIBBZ2 */
 
-#if HAVE_PKG_ZLIB
-    /*
-     *  XXX: The use of the "xdstlen_ul" temporary variable is to avoid the
-     *       gcc3.3 compiler warning: "dereferencing type-punned pointer
-     *       will break strict-aliasing rules".  A mere cast doesn't suffice.
-     */
+#if HAVE_ZLIB_H && HAVE_LIBZ
     if (type == MUNGE_ZIP_ZLIB) {
-        unsigned long xdstlen_ul = xdstlen;
-        if (uncompress (xdst, &xdstlen_ul,
-                xsrc, (unsigned long) xsrclen) != Z_OK)
-            return (-1);
-        xdstlen = xdstlen_ul;
+        if (uncompress (dst, &dstlen, src, srclen) != Z_OK) {
+            errno = EIO;
+            return -1;
+        }
     }
-#endif /* HAVE_PKG_ZLIB */
+#endif /* HAVE_ZLIB_H && HAVE_LIBZ */
 
-    *pdstlen = xdstlen;
-    return (0);
+    if (dstlen > INT_MAX) {
+        errno = ERANGE;
+        return -1;
+    }
+    *idstlen = (int) dstlen;
+    return 0;
 }
 
-
-/*  Returns a worst-case estimate for the buffer length needed to compress data
- *    in the [src] buffer of length [len] using the compression method [type],
- *    or -1 on error.
+/**
+ *  Calculate the buffer size (in bytes) required for compressing [len] bytes
+ *  using the specified compression method.  This is a worst-case estimate:
+ *  - bzlib: 1% larger than input + 600 bytes
+ *  - zlib:  0.1% larger than input + 12 bytes
+ *  The calculation includes space for 8 bytes of metadata (magic + length).
+ *  Return the required size, or -1 on error (with errno set).
+ *
+ *  Note: The [src] parameter is currently unused.
  */
 int
 zip_compress_length (munge_zip_t type, const void *src, int len)
 {
-/*  For zlib "deflate" compression, allocate an output buffer at least 0.1%
- *    larger than the uncompressed input, plus an additional 12 bytes.
- *  For bzlib compression, allocate an output buffer at least 1% larger than
- *    the uncompressed input, plus an additional 600 bytes.
- *  Also reserve space for encoding the size of the uncompressed data.
- *  The "+1" is for the double-to-int conversion to perform a ceiling function.
- *
- *  XXX: Note the [src] parm is not currently used here.
- */
-#if HAVE_PKG_BZLIB
-    if (type == MUNGE_ZIP_BZLIB)
-        return ((int) ((len * 1.01) + 600 + 1 + sizeof (zip_meta_t)));
-#endif /* HAVE_PKG_BZLIB */
+    double result;
 
-#if HAVE_PKG_ZLIB
-    if (type == MUNGE_ZIP_ZLIB)
-        return ((int) ((len * 1.001) + 12 + 1 + sizeof (zip_meta_t)));
-#endif /* HAVE_PKG_ZLIB */
+    if (!src || len < 0) {
+        errno = EINVAL;
+        return -1;
+    }
+    if (len == 0) {
+        return sizeof (zip_meta_t);
+    }
+#if HAVE_BZLIB_H && HAVE_LIBBZ2
+    if (type == MUNGE_ZIP_BZLIB) {
+        result = (len * 1.01) + 600 + 1 + sizeof (zip_meta_t);
+        if (result > INT_MAX) {
+            errno = ERANGE;
+            return -1;
+        }
+        return (int) result;
+    }
+#endif /* HAVE_BZLIB_H && HAVE_LIBBZ2 */
 
-    return (-1);
+#if HAVE_ZLIB_H && HAVE_LIBZ
+    if (type == MUNGE_ZIP_ZLIB) {
+        result = (len * 1.001) + 12 + 1 + sizeof (zip_meta_t);
+        if (result > INT_MAX) {
+            errno = ERANGE;
+            return -1;
+        }
+        return (int) result;
+    }
+#endif /* HAVE_ZLIB_H && HAVE_LIBZ */
+
+    errno = EINVAL;
+    return -1;
 }
 
-
-/*  Returns the decompressed (original) length of the compressed data
- *    in the [src] buffer of length [len], or -1 on error.
+/**
+ *  Extract the decompressed (original) size from compressed data metadata.
+ *  Return the decompressed size, or -1 on error (with errno set).
+ *
+ *  Note: The [type] parameter is currently unused.
  */
 int
 zip_decompress_length (munge_zip_t type, const void *src, int len)
 {
-/*  XXX: Note the [type] parm is not currently used here.
- */
-    zip_meta_t    *pmeta;
+    const zip_meta_t *meta;
+    uint32_t orig_len;
 
-    assert (src != NULL);
-
-    if (len < sizeof (zip_meta_t)) {
-        return (-1);
+    if (!src) {
+        errno = EINVAL;
+        return -1;
     }
-    pmeta = (void *) src;
-    if (ntohl (pmeta->magic) != ZIP_MAGIC) {
-        return (-1);
+    if (len < 0 || (size_t) len < sizeof (zip_meta_t)) {
+        errno = EINVAL;
+        return -1;
     }
-    return ((int) ntohl (pmeta->length));
-}
-
-
-/*  Returns [type] if that compression type is supported by the current
- *    configuration; otherwise, returns an acceptible default type.
- */
-munge_zip_t
-zip_select_default_type (munge_zip_t type)
-{
-/*  Selects an available compression type (assuming compression is requested
- *    by the specified [type]) with a preference towards zlib since it's fast
- *    with low overhead.
- */
-    munge_zip_t z;
-    munge_zip_t z_def;
-
-    z = MUNGE_ZIP_DEFAULT;
-    z_def = MUNGE_ZIP_NONE;
-
-#if HAVE_PKG_BZLIB
-    z_def = MUNGE_ZIP_BZLIB;
-    if (type == MUNGE_ZIP_BZLIB) {
-        z = MUNGE_ZIP_BZLIB;
+    meta = (const zip_meta_t *) src;
+    if (ntohl (meta->magic) != ZIP_MAGIC) {
+        errno = EBADMSG;
+        return -1;
     }
-#endif /* HAVE_PKG_BZLIB */
-
-#if HAVE_PKG_ZLIB
-    z_def = MUNGE_ZIP_ZLIB;
-    if (type == MUNGE_ZIP_ZLIB) {
-        z = MUNGE_ZIP_ZLIB;
+    orig_len = ntohl (meta->length);
+    if (orig_len > INT_MAX) {
+        errno = ERANGE;
+        return -1;
     }
-#endif /* HAVE_PKG_ZLIB */
-
-    if (type == MUNGE_ZIP_NONE) {
-        z = MUNGE_ZIP_NONE;
-    }
-    else if (z == MUNGE_ZIP_DEFAULT) {
-        z = z_def;
-    }
-    return (z);
+    return (int) orig_len;
 }
