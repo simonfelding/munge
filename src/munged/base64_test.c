@@ -1,4 +1,4 @@
-/*****************************************************************************
+/******************************************************************************
  *  Copyright (C) 2007-2026 Lawrence Livermore National Security, LLC.
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  UCRL-CODE-155910.
@@ -24,26 +24,22 @@
  *  <https://www.gnu.org/licenses/>.
  *****************************************************************************/
 
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "base64.h"
 #include "tap.h"
 
-
-/*****************************************************************************
+/**
  *  Test cases from RFC 2440 (OpenPGP Message Format)
- *    Section 6.5 (Examples of Radix-64).
- *****************************************************************************/
-
+ *  Section 6.5 (Examples of Radix-64)
+ */
 
 int validate (const char *dst, const void *src, int srclen);
 int encode_block (char *dst, int *dstlen, const void *src, int srclen);
 int encode_context (char *dst, int *dstlen, const void *src, int srclen);
 int decode_block (char *dst, int *dstlen, const void *src, int srclen);
 int decode_context (char *dst, int *dstlen, const void *src, int srclen);
-
 
 int
 main (int argc, char *argv[])
@@ -57,21 +53,13 @@ main (int argc, char *argv[])
     const char dst3[] = "FPucAw==";
 
     plan (3);
-
-    ok (validate (dst1, src1, sizeof (src1)) == 0,
-            "Input data 0x14fb9c03d97e");
-
-    ok (validate (dst2, src2, sizeof (src2)) == 0,
-            "Input data 0x14fb9c03d9");
-
-    ok (validate (dst3, src3, sizeof (src3)) == 0,
-            "Input data 0x14fb9c03");
-
+    ok (validate (dst1, src1, sizeof src1) == 0, "Input data 0x14fb9c03d97e");
+    ok (validate (dst2, src2, sizeof src2) == 0, "Input data 0x14fb9c03d9");
+    ok (validate (dst3, src3, sizeof src3) == 0, "Input data 0x14fb9c03");
     done_testing ();
 
     exit (EXIT_SUCCESS);
 }
-
 
 int
 validate (const char *dst, const void *src, int srclen)
@@ -79,44 +67,53 @@ validate (const char *dst, const void *src, int srclen)
     int n;
     char buf[9];
 
-    if (encode_block (buf, &n, src, srclen) < 0)
-        return (-1);
-    if (n != strlen (dst))
-        return (-1);
-    if (strncmp (dst, buf, n))
-        return (-1);
+    if (encode_block (buf, &n, src, srclen) < 0) {
+        return -1;
+    }
+    if (n != strlen (dst)) {
+        return -1;
+    }
+    if (strncmp (dst, buf, n)) {
+        return -1;
+    }
 
-    if (decode_block (buf, &n, dst, strlen (dst)) < 0)
-        return (-1);
-    if (n != srclen)
-        return (-1);
-    if (strncmp (src, buf, n))
-        return (-1);
+    if (decode_block (buf, &n, dst, strlen (dst)) < 0) {
+        return -1;
+    }
+    if (n != srclen) {
+        return -1;
+    }
+    if (strncmp (src, buf, n)) {
+        return -1;
+    }
 
-    if (encode_context (buf, &n, src, srclen) < 0)
-        return (-1);
-    if (n != strlen (dst))
-        return (-1);
-    if (strncmp (dst, buf, n))
-        return (-1);
+    if (encode_context (buf, &n, src, srclen) < 0) {
+        return -1;
+    }
+    if (n != strlen (dst)) {
+        return -1;
+    }
+    if (strncmp (dst, buf, n)) {
+        return -1;
+    }
 
-    if (decode_context (buf, &n, dst, strlen (dst)) < 0)
-        return (-1);
-    if (n != srclen)
-        return (-1);
-    if (strncmp (src, buf, n))
-        return (-1);
-
-    return (0);
+    if (decode_context (buf, &n, dst, strlen (dst)) < 0) {
+        return -1;
+    }
+    if (n != srclen) {
+        return -1;
+    }
+    if (strncmp (src, buf, n)) {
+        return -1;
+    }
+    return 0;
 }
-
 
 int
 encode_block (char *dst, int *dstlen, const void *src, int srclen)
 {
-    return (base64_encode_block (dst, dstlen, src, srclen));
+    return base64_encode_block (dst, dstlen, src, srclen);
 }
-
 
 int
 encode_context (char *dst, int *dstlen, const void *src, int srclen)
@@ -127,30 +124,32 @@ encode_context (char *dst, int *dstlen, const void *src, int srclen)
     int m;
     const unsigned char *p = src;
 
-    if (base64_init (&x) < 0)
-        return (-1);
+    if (base64_init (&x) < 0) {
+        return -1;
+    }
     for (i = 0, n = 0; i < srclen; i++) {
-        if (base64_encode_update (&x, dst, &m, p + i, 1) < 0)
-            return (-1);
+        if (base64_encode_update (&x, dst, &m, p + i, 1) < 0) {
+            return -1;
+        }
         dst += m;
         n += m;
     }
-    if (base64_encode_final (&x, dst, &m) < 0)
-        return (-1);
-    if (base64_cleanup (&x) < 0)
-        return (-1);
+    if (base64_encode_final (&x, dst, &m) < 0) {
+        return -1;
+    }
+    if (base64_cleanup (&x) < 0) {
+        return -1;
+    }
     n += m;
     *dstlen = n;
-    return (0);
+    return 0;
 }
-
 
 int
 decode_block (char *dst, int *dstlen, const void *src, int srclen)
 {
-    return (base64_decode_block (dst, dstlen, src, srclen));
+    return base64_decode_block (dst, dstlen, src, srclen);
 }
-
 
 int
 decode_context (char *dst, int *dstlen, const void *src, int srclen)
@@ -161,19 +160,23 @@ decode_context (char *dst, int *dstlen, const void *src, int srclen)
     int m;
     const unsigned char *p = src;
 
-    if (base64_init (&x) < 0)
-        return (-1);
+    if (base64_init (&x) < 0) {
+        return -1;
+    }
     for (i = 0, n = 0; i < srclen; i++) {
-        if (base64_decode_update (&x, dst, &m, p + i, 1) < 0)
-            return (-1);
+        if (base64_decode_update (&x, dst, &m, p + i, 1) < 0) {
+            return -1;
+        }
         dst += m;
         n += m;
     }
-    if (base64_decode_final (&x, dst, &m) < 0)
-        return (-1);
-    if (base64_cleanup (&x) < 0)
-        return (-1);
+    if (base64_decode_final (&x, dst, &m) < 0) {
+        return -1;
+    }
+    if (base64_cleanup (&x) < 0) {
+        return -1;
+    }
     n += m;
     *dstlen = n;
-    return (0);
+    return 0;
 }

@@ -298,9 +298,14 @@ dec_unarmor (munge_cred_t c)
     }
     base64_len = base64_tmp - base64_ptr;
 
-    /*  Allocate memory for unarmor'd data.
+    /*  Calculate base64 buffer size and allocate memory for unarmor'd data.
+     *  Check base64 length for error (< 0) or zero-length input (== 0).
      */
     c->outer_mem_len = base64_decode_length (base64_len);
+    if (c->outer_mem_len <= 0) {
+        return (m_msg_set_err (m, EMUNGE_SNAFU,
+            strdupf ("Invalid base64-decode data length %d", base64_len)));
+    }
     if (!(c->outer_mem = malloc (c->outer_mem_len))) {
         return (m_msg_set_err (m, EMUNGE_NO_MEMORY, NULL));
     }
