@@ -37,6 +37,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include "conf.h"
+#include "lock.h"
 #include "log.h"
 #include "str.h"
 

@@ -30,6 +30,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include <munge.h>
+#include "auth_send.h"
 #include "m_msg.h"
 
 

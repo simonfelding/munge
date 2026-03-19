@@ -37,6 +37,7 @@
 #include <string.h>
 #include <munge.h>
 #include "log.h"
+#include "read.h"
 #include "test.h"
 
 

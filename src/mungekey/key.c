@@ -40,6 +40,7 @@
 #include "entropy.h"
 #include "fd.h"
 #include "hkdf.h"
+#include "key.h"
 #include "log.h"
 #include "munge_defs.h"
 #include "str.h"

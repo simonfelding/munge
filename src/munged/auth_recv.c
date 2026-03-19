@@ -34,6 +34,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <munge.h>
+#include "auth_recv.h"
 #include "log.h"
 #include "m_msg.h"
 #include "path.h"
