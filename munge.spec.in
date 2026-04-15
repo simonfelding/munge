@@ -18,6 +18,9 @@ Release:	1%{?dist}
 # Hardening is the default since F23 (2015) but is opt-in on EL7.
 %global _hardened_build 1
 
+# Keep shipping libtool archive (.la) files for libmunge since some third-party software relies on it. See https://fedoraproject.org/wiki/Changes/RemoveLaFiles#How_To_Test
+%global __brp_remove_la_files %nil
+
 Summary:	MUNGE authentication service
 License:	GPL-3.0-or-later
 URL:		https://github.com/dun/munge
@@ -207,9 +210,7 @@ systemd-tmpfiles --create %{_tmpfilesdir}/munge.conf
 
 %files devel
 %{_includedir}/munge.h
-%if (0%{?rhel} && 0%{?rhel} < 10) || (0%{?fedora} && 0%{?fedora} < 36)
 %{_libdir}/libmunge.la
-%endif
 %{_libdir}/libmunge.so
 %{_libdir}/pkgconfig/munge.pc
 %{_mandir}/man3/munge.3*
